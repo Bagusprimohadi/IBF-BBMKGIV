@@ -56,7 +56,7 @@ const CONFIG = {
             "longsor": {
                 name: "Longsor (Hazard)",
                 folder: "data/hazard/Longsor/",
-                subtitle: "IBF InaFLEWS : Indonesia Flood Early Warning System",
+                subtitle: "IBF InaFLEWS : Indonesia Flood Landslide Early Warning System",
                 title: "Prediksi Potensi Bahaya Longsor Indonesia",
                 prefix: "longsor_day_",
                 extension: ".geojson",
@@ -72,7 +72,7 @@ const CONFIG = {
                 folder: "data/hazard/Udara Panas HeatStress/",
                 subtitle: "IBF HELIOS : Heat Extreme Level Indicator System",
                 title: "Prediksi Potensi Udara Panas HeatStress Indonesia",
-                prefix: "at_disc_day_",
+                prefix: "suhu_day_",
                 extension: ".geojson",
                 legends: [
                     { color: "transparent", label: "Nyaman / Tidak Ada Potensi", level: "normal" },
@@ -84,7 +84,7 @@ const CONFIG = {
             "snorkling": {
                 name: "Aktivitas Snorkling (Hazard)",
                 folder: "data/hazard/Snorkling/",
-                subtitle: "Marine Weather Early Warning System",
+                subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlook",
                 title: "Prediksi Kondisi Keamanan Snorkling Indonesia",
                 prefix: "snorkling_day_",
                 extension: ".geojson",
@@ -98,7 +98,7 @@ const CONFIG = {
             "diving": {
                 name: "Aktivitas Diving (Hazard)",
                 folder: "data/hazard/Diving/",
-                subtitle: "Marine Weather Early Warning System",
+                subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlook",
                 title: "Prediksi Kondisi Keamanan Diving Indonesia",
                 prefix: "diving_day_",
                 extension: ".geojson",
@@ -116,7 +116,7 @@ const CONFIG = {
             "risiko_banjir": {
                 name: "Risiko Dampak Banjir",
                 folder: "data/risiko/Banjir/",
-                subtitle: "IBF InaFLEWS : Impact-Based Forecasting",
+                subtitle: "IBF InaFLEWS : Indonesia Flood Landslide Early Warning System",
                 title: "Prediksi Risiko Dampak Banjir Indonesia",
                 prefix: "risiko_banjir_day_",
                 extension: ".geojson",
@@ -130,7 +130,7 @@ const CONFIG = {
             "risiko_longsor": {
                 name: "Risiko Dampak Longsor",
                 folder: "data/risiko/Longsor/",
-                subtitle: "IBF InaFLEWS : Impact-Based Forecasting",
+                subtitle: "IBF InaFLEWS : Indonesia Flood Landslide Early Warning System",
                 title: "Prediksi Risiko Dampak Longsor Indonesia",
                 prefix: "risiko_longsor_day_",
                 extension: ".geojson",
@@ -144,7 +144,7 @@ const CONFIG = {
             "risiko_snorkling": {
                 name: "Risiko Keamanan Snorkling",
                 folder: "data/risiko/Snorkling/",
-                subtitle: "Marine Impact-Based Forecasting",
+                subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlookg",
                 title: "Prediksi Risiko Keamanan Snorkling Indonesia",
                 prefix: "risiko_snorkling_day_",
                 extension: ".geojson",
@@ -158,7 +158,7 @@ const CONFIG = {
             "risiko_diving": {
                 name: "Risiko Keamanan Diving",
                 folder: "data/risiko/Diving/",
-                subtitle: "Marine Impact-Based Forecasting",
+                subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlook",
                 title: "Prediksi Risiko Keamanan Diving Indonesia",
                 prefix: "risiko_diving_day_",
                 extension: ".geojson",

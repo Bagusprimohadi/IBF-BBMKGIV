@@ -11,12 +11,12 @@ const CONFIG = {
     },
 
     paths: {
-        adminProvinsi: "data/admin/provinsi.geojson",
-        adminKabupaten: "data/admin/kabupaten.geojson"
+        adminProvinsi: "data/admin/admin_provinsi.geojson",
+        adminKabupaten: "data/admin/admin_kabupaten.geojson",
+        manifest: "data/manifest.json"
     },
 
     // Definisi Produk Berdasarkan Kategori (Hazard & Risiko)
-    // Setiap produk langsung memuat file vektor .geojson dari Python
     products: {
         // --- KATEGORI HAZARD (POTENSI BAHAYA) ---
         hazard: {
@@ -144,7 +144,7 @@ const CONFIG = {
             "risiko_snorkling": {
                 name: "Risiko Keamanan Snorkling",
                 folder: "data/risiko/snorkling/",
-                subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlookg",
+                subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlook",
                 title: "Prediksi Risiko Keamanan Snorkling Indonesia",
                 prefix: "risiko_snorkling_day_",
                 extension: ".geojson",

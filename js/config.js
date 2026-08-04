@@ -27,6 +27,7 @@ const CONFIG = {
                 title: "Prediksi Bahaya Angin Kencang Indonesia",
                 prefix: "angin_day_",
                 extension: ".geojson",
+                days: 3, // Mengatur rentang prediksi H0, H+1, H+2 (3 hari)
                 legends: [
                     { color: "#E0B0FF", label: "Waspada Dampak Angin Cuaca Badai", level: "waspada_badai" },
                     { color: "#BA55D3", label: "Siaga Dampak Angin Cuaca Badai", level: "siaga_badai" },
@@ -46,6 +47,7 @@ const CONFIG = {
                 title: "Prediksi Potensi Bahaya Banjir Indonesia",
                 prefix: "banjir_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "transparent", label: "Aman / Normal", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Potensi Banjir", level: "waspada" },
@@ -60,6 +62,7 @@ const CONFIG = {
                 title: "Prediksi Potensi Bahaya Longsor Indonesia",
                 prefix: "longsor_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "transparent", label: "Aman / Normal", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Potensi Longsor", level: "waspada" },
@@ -74,6 +77,7 @@ const CONFIG = {
                 title: "Prediksi Potensi Udara Panas HeatStress Indonesia",
                 prefix: "suhu_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "transparent", label: "Nyaman / Tidak Ada Potensi", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Udara Panas", level: "waspada" },
@@ -88,6 +92,7 @@ const CONFIG = {
                 title: "Prediksi Kondisi Keamanan Snorkling Indonesia",
                 prefix: "snorkling_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "#00FF00", label: "Aman untuk Snorkling", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Aktivitas Snorkling", level: "waspada" },
@@ -102,6 +107,7 @@ const CONFIG = {
                 title: "Prediksi Kondisi Keamanan Diving Indonesia",
                 prefix: "diving_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "#00FF00", label: "Aman untuk Diving", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Aktivitas Diving", level: "waspada" },
@@ -120,6 +126,7 @@ const CONFIG = {
                 title: "Prediksi Risiko Dampak Banjir Indonesia",
                 prefix: "risiko_banjir_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "transparent", label: "Risiko Rendah", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Sedang (Waspada)", level: "waspada" },
@@ -134,6 +141,7 @@ const CONFIG = {
                 title: "Prediksi Risiko Dampak Longsor Indonesia",
                 prefix: "risiko_longsor_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "transparent", label: "Risiko Rendah", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Sedang (Waspada)", level: "waspada" },
@@ -148,6 +156,7 @@ const CONFIG = {
                 title: "Prediksi Risiko Keamanan Snorkling Indonesia",
                 prefix: "risiko_snorkling_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "#00FF00", label: "Risiko Rendah", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Sedang", level: "waspada" },
@@ -162,6 +171,7 @@ const CONFIG = {
                 title: "Prediksi Risiko Keamanan Diving Indonesia",
                 prefix: "risiko_diving_day_",
                 extension: ".geojson",
+                days: 3,
                 legends: [
                     { color: "#00FF00", label: "Risiko Rendah", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Sedang", level: "waspada" },

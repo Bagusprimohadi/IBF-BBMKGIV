@@ -1,10 +1,11 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER PNG & METADATA V1.1
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VETOR V1.2 (PURE GEOJSON)
 // ==========================================
 
 let currentCategory = 'hazard'; // Default kategori awal ('hazard' atau 'risiko')
 let currentProductKey = 'angin'; // Default produk awal
-let currentOpacity = 0.85; // Default transparan (85%)
+let currentOpacity = 0.65; // Default transparan area poligon (65%)
+let activeOverlayLayer = null; // Menyimpan layer GeoJSON aktif di peta
 
 /**
  * Fungsi utama untuk mengganti produk dari menu tombol terpisah (Bahaya / Risiko)
@@ -23,138 +24,141 @@ function switchProduct(category, productKey) {
     }
 
     // Ambil konfigurasi dari CONFIG (config.js)
-    let productConfig = CONFIG.products[category][productKey];
+    let productConfig = CONFIG.products[category]?.[productKey];
     if (!productConfig) {
         console.error("Konfigurasi produk tidak ditemukan untuk:", category, productKey);
         return;
     }
 
-    // 1. Update Judul di Header Utama secara Dinamis (Menyesuaikan properti name & subtitle dari config.js)
+    // 1. Update Judul di Header Utama secara Dinamis
     let subtitleEl = document.getElementById('systemSubtitle');
     let titleEl = document.getElementById('hazardTitle');
     if (subtitleEl) subtitleEl.innerText = productConfig.subtitle || '';
     if (titleEl) titleEl.innerText = productConfig.title || productConfig.name || '';
 
-    // 2. Render Legenda Sesuai Produk Aktif (Menyesuaikan property legends dari config.js)
+    // 2. Render Legenda Sesuai Produk Aktif
     if (typeof renderLegend === 'function') {
         renderLegend(productConfig);
     }
 
-    // 3. Bersihkan Layer PNG Sebelumnya dari Peta
-    if (typeof imageLayers !== 'undefined' && Array.isArray(imageLayers)) {
-        imageLayers.forEach(layer => map.removeLayer(layer));
-        imageLayers = [];
+    // 3. Bersihkan Layer GeoJSON Sebelumnya dari Peta
+    if (activeOverlayLayer) {
+        map.removeLayer(activeOverlayLayer);
+        activeOverlayLayer = null;
     }
 
-    // 4. Muat Data Metadata & Layer PNG Baru
-    loadProductData(category, productKey);
+    // 4. Muat Struktur Hari / Timeline Otomatis (Default 3 Hari: day_0, day_1, day_2)
+    loadProductTimeline(category, productKey);
 }
 
 /**
- * Memuat file metadata JSON dan menyusun tombol navigasi waktu (Hari)
+ * Menyiapkan tombol navigasi waktu (Hari) untuk produk GeoJSON
  */
-function loadProductData(category, productKey) {
+function loadProductTimeline(category, productKey) {
     let productConfig = CONFIG.products[category][productKey];
-    let uniqueInit = new Date().getTime(); // Mencegah cache browser
-
     let dateTextEl = document.getElementById('validDateText');
     if (dateTextEl) dateTextEl.innerText = "Valid: Memuat data...";
 
-    // Mengambil file metadata JSON dari folder produk yang bersangkutan
-    let metadataUrl = productConfig.folder + productConfig.metaFile + '?v=' + uniqueInit;
+    const btnContainer = document.getElementById('dayButtonsContainer');
+    if (btnContainer) {
+        btnContainer.innerHTML = "";
+    }
 
-    fetch(metadataUrl)
-        .then(res => {
-            if (!res.ok) throw new Error("Metadata tidak ditemukan");
-            return res.json();
-        })
-        .then(data => {
-            window.validDates = data.dates || [];
-            let bounds = data.bounds || CONFIG.map.defaultBounds;
+    // Asumsi standar prediksi harian 3 hari ke depan (H-0, H+1, H+2 / index 0, 1, 2)
+    // Atau bisa disesuaikan dengan jumlah file manifest jika tersedia
+    window.validDates = ["Hari ke-1", "Hari ke-2", "Hari ke-3"]; 
+    window.imageLayers = []; // Kompatibilitas fungsi playback/timeline eksternal jika ada
 
-            // Simpan juga data atribut rekap wilayah dari metadata jika disediakan backend
-            window.backendImpactData = data.regions || data.impactData || {};
+    for (let i = 0; i < 3; i++) {
+        if (btnContainer) {
+            let btn = document.createElement('button');
+            btn.className = 'time-btn';
+            btn.id = 'day-btn-' + i;
+            btn.innerText = `H${i === 0 ? '0' : '+' + i}`; 
+            btn.onclick = function() {    
+                if (typeof stopPlay === 'function') stopPlay();    
+                loadDay(i);    
+            };
+            btnContainer.appendChild(btn);
+        }
+    }
 
-            const btnContainer = document.getElementById('dayButtonsContainer');
-            if (btnContainer) {
-                btnContainer.innerHTML = "";
-            }
-
-            window.imageLayers = [];
-
-            // Buat overlay gambar PNG dan tombol hari secara dinamis
-            for (let i = 0; window.validDates && i < window.validDates.length; i++) {
-                // Penamaan file PNG mengikuti prefiks di dalam folder produk
-                let imgUrl = `${productConfig.folder}${productConfig.prefix}${i}.png?v=${uniqueInit}`;
-                
-                let overlay = L.imageOverlay(imgUrl, bounds, { 
-                    opacity: 0, 
-                    interactive: false 
-                }).addTo(map);
-                
-                window.imageLayers.push(overlay);
-
-                if (btnContainer) {
-                    let btn = document.createElement('button');
-                    btn.className = 'time-btn';
-                    btn.id = 'day-btn-' + i;
-                    // Label tombol otomatis H-1, H+0, H+1, dst
-                    btn.innerText = `H${i === 0 ? '-1' : '+' + (i - 1)}`; 
-                    btn.onclick = function() { 
-                        if (typeof stopPlay === 'function') stopPlay(); 
-                        loadDay(i); 
-                    };
-                    btnContainer.appendChild(btn);
-                }
-            }
-
-            // Muat hari pertama sebagai default tampilan awal
-            if (window.validDates.length > 0) {
-                loadDay(0);
-            }
-        })
-        .catch(err => {
-            console.warn("Gagal memuat metadata:", err);
-            window.validDates = [];
-            if (dateTextEl) dateTextEl.innerText = "⚠️ Data Produk Belum Tersedia";
-            
-            const btnContainer = document.getElementById('dayButtonsContainer');
-            if (btnContainer) {
-                btnContainer.innerHTML = "<span style='font-size:12px; color:#f43f5e; font-weight:bold;'>Data belum diunggah ke server.</span>";
-            }
-            if (typeof imageLayers !== 'undefined') {
-                imageLayers.forEach(layer => map.removeLayer(layer));
-                imageLayers = [];
-            }
-        });
+    // Muat hari pertama sebagai default tampilan awal
+    loadDay(0);
 }
 
 /**
- * Menampilkan layer gambar PNG pada indeks hari tertentu
+ * Memuat dan menampilkan file GeoJSON berdasarkan indeks hari (0, 1, 2)
  */
 function loadDay(index) {
-    if (!window.validDates || window.validDates.length === 0) return;
     window.currentIndex = index;
+    let productConfig = CONFIG.products[currentCategory][currentProductKey];
+    let uniqueInit = new Date().getTime(); // Mencegah cache browser
 
-    if (typeof imageLayers !== 'undefined') {
-        for (let i = 0; i < imageLayers.length; i++) {
-            if (i === index) {
-                imageLayers[i].setOpacity(currentOpacity); // Mengikuti nilai slider opacity aktif
-            } else {
-                imageLayers[i].setOpacity(0);
-            }
-        }
-    }
-
-    for (let i = 0; i < window.validDates.length; i++) {
-        let btn = document.getElementById('day-btn-' + i);
-        if (btn) {
-            btn.classList.toggle('active', i === index);
-        }
-    }
+    // Susun path file GeoJSON: contoh data/hazard/angin/angin_day_0.geojson
+    let filePath = `${productConfig.folder}${productConfig.prefix}${index}${productConfig.extension}?v=${uniqueInit}`;
 
     let dateTextEl = document.getElementById('validDateText');
-    if (dateTextEl && typeof Utils !== 'undefined') {
-        dateTextEl.innerText = `Valid: ${Utils.formatTanggal(window.validDates[index])}`;
+    if (dateTextEl) dateTextEl.innerText = `Valid: Memuat Hari ke-${index + 1}...`;
+
+    // Hapus layer aktif sebelumnya
+    if (activeOverlayLayer) {
+        map.removeLayer(activeOverlayLayer);
+        activeOverlayLayer = null;
     }
+
+    if (typeof showLoader === 'function') showLoader();
+
+    fetch(filePath)
+        .then(res => {
+            if (!res.ok) throw new Error("File GeoJSON tidak ditemukan");
+            return res.json();
+        })
+        .then(geojsonData => {
+            // Tangkap tanggal valid jika disertakan dalam properti fitur pertama
+            if (geojsonData.features && geojsonData.features.length > 0) {
+                let firstProps = geojsonData.features[0].properties;
+                if (firstProps.date && dateTextEl && typeof Utils !== 'undefined') {
+                    dateTextEl.innerText = `Valid: ${Utils.formatTanggal(firstProps.date)}`;
+                } else if (dateTextEl) {
+                    dateTextEl.innerText = `Valid: Prediksi Hari ke-${index + 1}`;
+                }
+            }
+
+            // Render GeoJSON ke Peta Leaflet
+            activeOverlayLayer = L.geoJSON(geojsonData, {
+                style: function (feature) {
+                    // Ambil warna langsung dari kolom 'color' yang dihasilkan Python
+                    let fillColor = feature.properties.color || "#FFA500";
+                    return {
+                        fillColor: fillColor,
+                        weight: 1,
+                        opacity: 0.9,
+                        color: "#333333", // Warna garis batas poligon
+                        fillOpacity: currentOpacity // Mengikuti slider opacity aktif
+                    };
+                },
+                onEachFeature: function (feature, layer) {
+                    // Panggil popup interaktif dari popup.js saat poligon diklik
+                    if (typeof bindFeaturePopup === 'function') {
+                        bindFeaturePopup(feature, layer, productConfig);
+                    }
+                }
+            }).addTo(map);
+
+            // Update status tombol aktif di UI
+            for (let i = 0; i < 3; i++) {
+                let btn = document.getElementById('day-btn-' + i);
+                if (btn) {
+                    btn.classList.toggle('active', i === index);
+                }
+            }
+
+            if (typeof hideLoader === 'function') hideLoader();
+        })
+        .catch(err => {
+            console.warn("Gagal memuat GeoJSON:", err);
+            if (dateTextEl) dateTextEl.innerText = "⚠️ Data Hari Ini Belum Tersedia";
+            if (typeof hideLoader === 'function') hideLoader();
+        });
 }

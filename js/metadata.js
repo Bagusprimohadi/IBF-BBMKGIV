@@ -1,80 +1,67 @@
 // ==========================================
-// METADATA.JS - PENGELOLA METADATA PRODUK V1.1
+// METADATA.JS - PENGELOLA MANIFEST & ATRIBUT GEOJSON V1.2
 // ==========================================
 
 const MetadataManager = {
-    currentData: null,
+    manifestData: null,
 
     /**
-     * Mengambil file metadata JSON berdasarkan konfigurasi produk
-     * @param {Object} productConfig - Konfigurasi dari CONFIG.products[category][productKey]
-     * @param {Function} callback - Fungsi yang dijalankan setelah metadata sukses dimuat
+     * Memuat manifest global (data/manifest.json) jika backend Python memperbarui timestamp sistem
+     * @param {Function} callback - Fungsi callback setelah manifest dimuat
      */
-    fetchMetadata(productConfig, callback) {
-        if (!productConfig || !productConfig.folder || !productConfig.metaFile) {
-            console.error("Konfigurasi produk tidak valid untuk memuat metadata.");
-            return;
-        }
+    fetchManifest(callback) {
+        let uniqueInit = new Date().getTime();
+        let manifestUrl = `${CONFIG.paths.manifest || 'data/manifest.json'}?v=${uniqueInit}`;
 
-        let uniqueInit = new Date().getTime(); // Mencegah cache browser
-        let metadataUrl = `${productConfig.folder}${productConfig.metaFile}?v=${uniqueInit}`;
-
-        fetch(metadataUrl)
+        fetch(manifestUrl)
             .then(res => {
-                if (!res.ok) throw new Error(`Gagal memuat file metadata: ${productConfig.metaFile}`);
+                if (!res.ok) throw new Error("Manifest file tidak ditemukan");
                 return res.json();
             })
             .then(data => {
-                this.currentData = data;
-                
-                // Simpan ke variabel global agar mudah diakses lintas modul
-                window.validDates = data.dates || [];
-                window.backendImpactData = data.regions || data.impactData || {};
-                
-                let bounds = data.bounds || CONFIG.map.defaultBounds;
-
-                // Jalankan callback jika ada
-                if (typeof callback === 'function') {
-                    callback({
-                        dates: window.validDates,
-                        bounds: bounds,
-                        regions: window.backendImpactData,
-                        raw: data
-                    });
-                }
+                this.manifestData = data;
+                if (typeof callback === 'function') callback(data);
             })
             .catch(err => {
-                console.warn("Peringatan Metadata:", err);
-                window.validDates = [];
-                window.backendImpactData = {};
-
-                if (typeof callback === 'function') {
-                    callback({
-                        dates: [],
-                        bounds: CONFIG.map.defaultBounds,
-                        regions: {},
-                        error: err
-                    });
-                }
+                console.warn("Peringatan Manifest:", err.message);
+                if (typeof callback === 'function') callback(null);
             });
     },
 
     /**
-     * Mendapatkan daftar tanggal valid yang sedang aktif
+     * Mengekstrak seluruh fitur dan atribut yang ada di layer GeoJSON aktif
+     * @returns {Array} List properti dari setiap fitur di peta
      */
-    getValidDates() {
-        return window.validDates || [];
+    getActiveFeaturesProperties() {
+        if (!activeOverlayLayer) return [];
+        let propertiesList = [];
+        activeOverlayLayer.eachLayer(layer => {
+            if (layer.feature && layer.feature.properties) {
+                propertiesList.push(layer.feature.properties);
+            }
+        });
+        return propertiesList;
     },
 
     /**
-     * Mendapatkan data rekap dampak/warning backend untuk wilayah tertentu
-     * @param {string} key - Kode wilayah atau nama wilayah
+     * Mencari atribut spesifik wilayah berdasarkan nama kabupaten/wilayah dari GeoJSON aktif
+     * @param {string} regionName - Nama kabupaten / wilayah
      */
-    getRegionData(key) {
-        if (!window.backendImpactData) return null;
-        return window.backendImpactData[key] 
-            || window.backendImpactData[String(key).toUpperCase()] 
-            || window.backendImpactData[String(key).toLowerCase()] 
-            || null;
+    getRegionPropsFromGeoJSON(regionName) {
+        if (!activeOverlayLayer || !regionName) return null;
+        let foundProps = null;
+        let searchKey = String(regionName).toLowerCase().trim();
+
+        activeOverlayLayer.eachLayer(layer => {
+            if (layer.feature && layer.feature.properties) {
+                let props = layer.feature.properties;
+                let nameInProps = (props.kabupaten || props.WADMKK || props.NAME_2 || '').toLowerCase().trim();
+                if (nameInProps === searchKey) {
+                    foundProps = props;
+                }
+            }
+        });
+
+        return foundProps;
     }
 };

@@ -1,5 +1,5 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VETOR V1.2 (PURE GEOJSON)
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.2 (PURE GEOJSON)
 // ==========================================
 
 let currentCategory = 'hazard'; // Default kategori awal ('hazard' atau 'risiko')
@@ -21,6 +21,8 @@ function switchProduct(category, productKey) {
     // Tutup semua dropdown terbuka
     if (typeof closeAllDropdowns === 'function') {
         closeAllDropdowns();
+    } else if (typeof toggleDropdown === 'function') {
+        document.querySelectorAll('.dropdown-wrapper').forEach(el => el.classList.remove('active'));
     }
 
     // Ambil konfigurasi dari CONFIG (config.js)
@@ -47,12 +49,12 @@ function switchProduct(category, productKey) {
         activeOverlayLayer = null;
     }
 
-    // 4. Muat Struktur Hari / Timeline Otomatis (Default 3 Hari: day_0, day_1, day_2)
+    // 4. Muat Struktur Hari / Timeline Otomatis
     loadProductTimeline(category, productKey);
 }
 
 /**
- * Menyiapkan tombol navigasi waktu (Hari) untuk produk GeoJSON
+ * Menyiapkan tombol navigasi waktu (Hari) untuk produk GeoJSON (H0, H+1, H+2, dst.)
  */
 function loadProductTimeline(category, productKey) {
     let productConfig = CONFIG.products[category][productKey];
@@ -64,12 +66,12 @@ function loadProductTimeline(category, productKey) {
         btnContainer.innerHTML = "";
     }
 
-    // Asumsi standar prediksi harian 3 hari ke depan (H-0, H+1, H+2 / index 0, 1, 2)
-    // Atau bisa disesuaikan dengan jumlah file manifest jika tersedia
-    window.validDates = ["Hari ke-1", "Hari ke-2", "Hari ke-3"]; 
-    window.imageLayers = []; // Kompatibilitas fungsi playback/timeline eksternal jika ada
+    // Ambil jumlah hari prediksi dari CONFIG (default 3 hari jika tidak ditentukan)
+    let totalDays = productConfig.days || 3;
+    window.validDates = Array.from({ length: totalDays }, (_, i) => `Hari ke-${i + 1}`); 
+    window.imageLayers = []; // Kompatibilitas fungsi playback/timeline eksternal
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < totalDays; i++) {
         if (btnContainer) {
             let btn = document.createElement('button');
             btn.className = 'time-btn';
@@ -83,7 +85,7 @@ function loadProductTimeline(category, productKey) {
         }
     }
 
-    // Muat hari pertama sebagai default tampilan awal
+    // Muat hari pertama (H0 / index 0) sebagai tampilan awal
     loadDay(0);
 }
 
@@ -95,7 +97,7 @@ function loadDay(index) {
     let productConfig = CONFIG.products[currentCategory][currentProductKey];
     let uniqueInit = new Date().getTime(); // Mencegah cache browser
 
-    // Susun path file GeoJSON: contoh data/hazard/angin/angin_day_0.geojson
+    // Susun path file GeoJSON (contoh: data/hazard/angin/angin_day_0.geojson)
     let filePath = `${productConfig.folder}${productConfig.prefix}${index}${productConfig.extension}?v=${uniqueInit}`;
 
     let dateTextEl = document.getElementById('validDateText');
@@ -115,7 +117,7 @@ function loadDay(index) {
             return res.json();
         })
         .then(geojsonData => {
-            // Tangkap tanggal valid jika disertakan dalam properti fitur pertama
+            // Tangkap tanggal valid dari properti fitur pertama jika ada
             if (geojsonData.features && geojsonData.features.length > 0) {
                 let firstProps = geojsonData.features[0].properties;
                 if (firstProps.date && dateTextEl && typeof Utils !== 'undefined') {
@@ -128,18 +130,49 @@ function loadDay(index) {
             // Render GeoJSON ke Peta Leaflet
             activeOverlayLayer = L.geoJSON(geojsonData, {
                 style: function (feature) {
-                    // Ambil warna langsung dari kolom 'color' yang dihasilkan Python
-                    let fillColor = feature.properties.color || "#FFA500";
+                    // Ambil warna langsung dari kolom 'color' hasil olahan Python
+                    let fillColor = feature.properties.color || "#38bdf8";
                     return {
                         fillColor: fillColor,
-                        weight: 1,
+                        weight: 1.5,
                         opacity: 0.9,
-                        color: "#333333", // Warna garis batas poligon
+                        color: "rgba(255, 255, 255, 0.4)", // Garis batas terang futuristik
                         fillOpacity: currentOpacity // Mengikuti slider opacity aktif
                     };
                 },
+                // Penanganan khusus jika data geometri bertipe Point / Titik
+                pointToLayer: function (feature, latlng) {
+                    let fillColor = feature.properties.color || "#38bdf8";
+                    return L.circleMarker(latlng, {
+                        radius: 7,
+                        fillColor: fillColor,
+                        color: "#ffffff",
+                        weight: 1.5,
+                        opacity: 1,
+                        fillOpacity: currentOpacity
+                    });
+                },
                 onEachFeature: function (feature, layer) {
-                    // Panggil popup interaktif dari popup.js saat poligon diklik
+                    // Efek Hover Sorot Poligon
+                    layer.on({
+                        mouseover: function (e) {
+                            let l = e.target;
+                            l.setStyle({
+                                weight: 3,
+                                color: "#38bdf8"
+                            });
+                            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                                l.bringToFront();
+                            }
+                        },
+                        mouseout: function (e) {
+                            if (activeOverlayLayer) {
+                                activeOverlayLayer.resetStyle(e.target);
+                            }
+                        }
+                    });
+
+                    // Panggil popup interaktif dari popup.js saat fitur diklik
                     if (typeof bindFeaturePopup === 'function') {
                         bindFeaturePopup(feature, layer, productConfig);
                     }
@@ -147,7 +180,8 @@ function loadDay(index) {
             }).addTo(map);
 
             // Update status tombol aktif di UI
-            for (let i = 0; i < 3; i++) {
+            let totalDays = productConfig.days || 3;
+            for (let i = 0; i < totalDays; i++) {
                 let btn = document.getElementById('day-btn-' + i);
                 if (btn) {
                     btn.classList.toggle('active', i === index);

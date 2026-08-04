@@ -1,41 +1,51 @@
 // ==========================================
-// APP.JS - ENTRY POINT UTAMA APLIKASI V1.1
+// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
     console.log("🚀 Menginisialisasi IBF WebGIS Operational System - BBMKG IV...");
 
-    // 1. Tampilkan indikator loading awal jika loader.js aktif
+    // 1. Tampilkan indikator loading awal
     if (typeof Loader !== 'undefined') {
-        Loader.show("Menyiapkan Sistem Command Center...");
+        Loader.show("Menyiapkan Command Center WebGIS...");
     }
 
-    // 2. Inisialisasi Kontrol Skala Peta (Scalebar)
-    if (typeof initScaleBar === 'function') {
-        initScaleBar();
+    // 2. Inisialisasi Peta Dasar & Basemap (Wajib Pertama)
+    if (typeof initMap === 'function') {
+        initMap();
+    }
+    if (typeof initBasemap === 'function') {
+        initBasemap();
     }
 
-    // 3. Inisialisasi Kotak Pencarian Cepat (Search Control)
-    if (typeof initSearchControl === 'function') {
-        initSearchControl();
-    }
+    // 3. Inisialisasi Kontrol Tambahan UI
+    if (typeof initScaleBar === 'function') initScaleBar();
+    if (typeof initSearchControl === 'function') initSearchControl();
 
-    // 4. Tangani State awal aplikasi dari URL (jika ada parameter ?cat=...&prod=...&day=...)
-    // Jika tidak ada di URL, UrlState akan memuat produk default (hazard -> angin)
+    // 4. Penanganan Event Global: Tutup Dropdown saat Klik Luar
+    window.addEventListener('click', function (e) {
+        if (!e.target.matches('.dropdown-btn')) {
+            const dropdowns = document.querySelectorAll('.dropdown-wrapper');
+            dropdowns.forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+        }
+    });
+
+    // 5. Tangani State awal aplikasi dari URL / Load default product
     if (typeof UrlState !== 'undefined' && typeof UrlState.applyInitialState === 'function') {
         UrlState.applyInitialState();
     } else {
-        // Fallback jika urlstate.js belum termuat
         if (typeof switchProduct === 'function') {
             switchProduct('hazard', 'angin');
         }
     }
 
-    // 5. Sembunyikan loader setelah jeda singkat inisialisasi layer
+    // 6. Sembunyikan loader setelah inisialisasi selesai
     setTimeout(() => {
         if (typeof Loader !== 'undefined') {
             Loader.hide();
         }
         console.log("✅ IBF WebGIS Berhasil Dimuat dan Siap Digunakan.");
-    }, 1000);
+    }, 800);
 });

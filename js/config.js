@@ -136,7 +136,7 @@ const CONFIG = {
                 prefix: "risiko_banjir_day_",
                 hasSpecialClasses: false,
                 legends: [
-                    { color: "#00FF00", label: "Risiko Rendah", level: "Normal" },
+                    { color: "transparent", label: "Risiko Rendah", level: "Normal" },
                     { color: "#FFFF00", label: "Risiko Sedang (Waspada)", level: "Waspada" },
                     { color: "#FFA500", label: "Risiko Tinggi (Siaga)", level: "Siaga" },
                     { color: "#FF0000", label: "Risiko Sangat Tinggi (Awas)", level: "Awas" }
@@ -152,7 +152,7 @@ const CONFIG = {
                 prefix: "risiko_longsor_day_",
                 hasSpecialClasses: false,
                 legends: [
-                    { color: "#00FF00", label: "Risiko Rendah", level: "Normal" },
+                    { color: "transparent", label: "Risiko Rendah", level: "Normal" },
                     { color: "#FFFF00", label: "Risiko Sedang (Waspada)", level: "Waspada" },
                     { color: "#FFA500", label: "Risiko Tinggi (Siaga)", level: "Siaga" },
                     { color: "#FF0000", label: "Risiko Sangat Tinggi (Awas)", level: "Awas" }

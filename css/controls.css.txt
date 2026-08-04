@@ -1,0 +1,203 @@
+/* ==========================================
+   CONTROLS & INTERFACE - FUTURISTIC STYLE
+   ========================================== */
+
+/* --- KONTROL KANAN ATAS (DROPDOWN & TOMBOL) --- */
+.top-right-controls {
+    position: absolute; 
+    top: 25px; 
+    right: 25px; 
+    z-index: 1000;
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    align-items: flex-end;
+}
+
+.dropdown-wrapper { 
+    position: relative; 
+    display: inline-block; 
+}
+
+.dropdown-btn {
+    background: rgba(15, 23, 42, 0.85); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #f8fafc; 
+    border: 1px solid rgba(56, 189, 248, 0.3); 
+    padding: 12px 20px;
+    border-radius: 10px; 
+    cursor: pointer; 
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; 
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s ease;
+}
+
+.dropdown-btn:hover { 
+    background: rgba(30, 41, 59, 0.95); 
+    border-color: rgba(56, 189, 248, 0.6);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+}
+
+.dropdown-content {
+    display: none; 
+    position: absolute; 
+    right: 0; 
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    min-width: 280px; 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 12px; 
+    z-index: 1001; 
+    overflow: hidden; 
+    margin-top: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+.dropdown-content button, .dropdown-content a {
+    color: #cbd5e1; 
+    padding: 12px 18px; 
+    text-align: left; 
+    background: none;
+    border: none; 
+    width: 100%; 
+    cursor: pointer; 
+    font-size: 13px; 
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+    display: block;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.dropdown-content button:hover, .dropdown-content a:hover { 
+    background: rgba(56, 189, 248, 0.15); 
+    color: #38bdf8;
+}
+
+.dropdown-wrapper.active .dropdown-content { display: block; }
+
+
+/* --- KOTAK KONTROL KIRI BAWAH (WAKTU, PLAYBACK, SLIDER) --- */
+.control-box {
+    position: absolute; 
+    bottom: 25px; 
+    left: 25px; 
+    z-index: 1000;
+    background: rgba(15, 23, 42, 0.88); 
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 20px; 
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+    width: 340px;
+    box-sizing: border-box;
+}
+
+.control-box h4 { 
+    margin: 0 0 10px 0; 
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px; 
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #38bdf8;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2); 
+    padding-bottom: 6px; 
+}
+
+.time-controls { 
+    margin-bottom: 14px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+}
+
+.button-group { 
+    display: flex; 
+    gap: 5px; 
+    justify-content: space-between; 
+    flex-wrap: wrap; 
+}
+
+.time-btn {
+    flex: 1; 
+    background: rgba(30, 41, 59, 0.8); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    color: #e2e8f0;
+    padding: 8px 4px; 
+    cursor: pointer; 
+    border-radius: 6px; 
+    font-size: 12px; 
+    font-weight: 600; 
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.time-btn:hover { 
+    background: rgba(56, 189, 248, 0.2); 
+    border-color: #38bdf8;
+}
+
+.time-btn.active { 
+    background: #0284c7; 
+    color: white; 
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.nav-playback-group { 
+    display: flex; 
+    gap: 6px; 
+    margin-top: 4px; 
+}
+
+.action-btn {
+    flex: 1; 
+    background: rgba(30, 41, 59, 0.9); 
+    color: #f8fafc; 
+    border: 1px solid rgba(255, 255, 255, 0.15); 
+    padding: 8px; 
+    cursor: pointer; 
+    border-radius: 6px; 
+    font-size: 12px; 
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.action-btn:hover { 
+    background: rgba(56, 189, 248, 0.25); 
+    border-color: #38bdf8;
+}
+
+.action-btn.playing { 
+    background: #e11d48; 
+    border-color: #f43f5e;
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+}
+
+/* --- OPACITY SLIDER STYLING --- */
+.opacity-control {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.opacity-control label {
+    font-size: 11px;
+    font-family: 'Orbitron', sans-serif;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 6px;
+}
+
+input[type=range] {
+    accent-color: #38bdf8;
+    cursor: pointer;
+}

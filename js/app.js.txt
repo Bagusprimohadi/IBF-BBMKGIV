@@ -1,0 +1,41 @@
+// ==========================================
+// APP.JS - ENTRY POINT UTAMA APLIKASI V1.1
+// ==========================================
+
+document.addEventListener("DOMContentLoaded", function () {
+    console.log("🚀 Menginisialisasi IBF WebGIS Operational System - BBMKG IV...");
+
+    // 1. Tampilkan indikator loading awal jika loader.js aktif
+    if (typeof Loader !== 'undefined') {
+        Loader.show("Menyiapkan Sistem Command Center...");
+    }
+
+    // 2. Inisialisasi Kontrol Skala Peta (Scalebar)
+    if (typeof initScaleBar === 'function') {
+        initScaleBar();
+    }
+
+    // 3. Inisialisasi Kotak Pencarian Cepat (Search Control)
+    if (typeof initSearchControl === 'function') {
+        initSearchControl();
+    }
+
+    // 4. Tangani State awal aplikasi dari URL (jika ada parameter ?cat=...&prod=...&day=...)
+    // Jika tidak ada di URL, UrlState akan memuat produk default (hazard -> angin)
+    if (typeof UrlState !== 'undefined' && typeof UrlState.applyInitialState === 'function') {
+        UrlState.applyInitialState();
+    } else {
+        // Fallback jika urlstate.js belum termuat
+        if (typeof switchProduct === 'function') {
+            switchProduct('hazard', 'angin');
+        }
+    }
+
+    // 5. Sembunyikan loader setelah jeda singkat inisialisasi layer
+    setTimeout(() => {
+        if (typeof Loader !== 'undefined') {
+            Loader.hide();
+        }
+        console.log("✅ IBF WebGIS Berhasil Dimuat dan Siap Digunakan.");
+    }, 1000);
+});

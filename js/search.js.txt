@@ -1,0 +1,120 @@
+// ==========================================
+// SEARCH.JS - PENCARIAN CEPAT WILAYAH V1.1
+// ==========================================
+
+/**
+ * Menginisialisasi komponen pencarian cepat pada peta
+ */
+function initSearchControl() {
+    const searchContainer = document.getElementById('searchContainer');
+    if (!searchContainer) return;
+
+    searchContainer.innerHTML = `
+        <div class="search-box-wrapper">
+            <input type="text" id="searchInput" placeholder="🔍 Cari Kabupaten / Kota..." oninput="handleSearchInput(this.value)" autocomplete="off">
+            <div id="searchResults" class="search-results-dropdown" style="display: none;"></div>
+        </div>
+    `;
+}
+
+/**
+ * Menangani input ketikan pengguna untuk memfilter nama kabupaten
+ * @param {string} query 
+ */
+function handleSearchInput(query) {
+    const resultsContainer = document.getElementById('searchResults');
+    if (!resultsContainer) return;
+
+    let cleanQuery = query.trim().toLowerCase();
+    if (cleanQuery.length < 2) {
+        resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
+        return;
+    }
+
+    if (typeof geojsonLayer === 'undefined' || !geojsonLayer) {
+        console.warn("Layer GeoJSON administrasi belum dimuat.");
+        return;
+    }
+
+    let matches = [];
+
+    // Filter fitur kabupaten dari geojsonLayer aktif
+    geojsonLayer.eachLayer(layer => {
+        let props = layer.feature.properties || {};
+        let namaKab = props.WADMKK || props.kabupaten || props.NAME_2 || '';
+        let namaProv = props.WADMPR || props.provinsi || props.NAME_1 || '';
+
+        if (namaKab.toLowerCase().includes(cleanQuery)) {
+            matches.push({
+                layer: layer,
+                namaKab: namaKab,
+                namaProv: namaProv,
+                feature: layer.feature
+            });
+        }
+    });
+
+    renderSearchResults(matches, resultsContainer);
+}
+
+/**
+ * Merender daftar hasil pencarian ke dalam dropdown
+ */
+function renderSearchResults(matches, container) {
+    if (matches.length === 0) {
+        container.innerHTML = `<div class="search-item-empty">Wilayah tidak ditemukan</div>`;
+        container.style.display = 'block';
+        return;
+    }
+
+    // Batasi tampilan maksimal 8 hasil
+    let limitMatches = matches.slice(0, 8);
+    let html = '';
+
+    limitMatches.forEach((item, index) => {
+        html += `
+            <div class="search-item" onclick="selectSearchResult(${index})">
+                <span class="search-item-title">📍 ${item.namaKab}</span>
+                <span class="search-item-sub">${item.namaProv}</span>
+            </div>
+        `;
+    });
+
+    // Simpan data pencarian sementara di window agar bisa diakses saat diklik
+    window.currentSearchMatches = limitMatches;
+
+    container.innerHTML = html;
+    container.style.display = 'block';
+}
+
+/**
+ * Menangani aksi saat pengguna mengklik salah satu hasil pencarian
+ * @param {number} index 
+ */
+function selectSearchResult(index) {
+    const resultsContainer = document.getElementById('searchResults');
+    const searchInput = document.getElementById('searchInput');
+
+    if (!window.currentSearchMatches || !window.currentSearchMatches[index]) return;
+
+    let selected = window.currentSearchMatches[index];
+    let targetLayer = selected.layer;
+
+    if (searchInput) searchInput.value = selected.namaKab;
+    if (resultsContainer) {
+        resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
+    }
+
+    // 1. Zoom ke area poligon kabupaten
+    if (targetLayer.getBounds && typeof targetLayer.getBounds === 'function') {
+        map.fitBounds(targetLayer.getBounds(), { padding: [50, 50], maxZoom: 11 });
+    }
+
+    // 2. Buka Popup analisis IBF secara otomatis
+    if (typeof handleMapClick === 'function') {
+        let center = targetLayer.getBounds().getCenter();
+        handleMapClick({ latlng: center }, selected.feature);
+    }
+}

@@ -1,0 +1,83 @@
+// ==========================================
+// UTILS.JS - FUNGSI BANTU / HELPER V1.1
+// ==========================================
+
+const Utils = {
+    /**
+     * Format tanggal standar Indonesia (contoh: Senin, 28 Juli 2026)
+     * @param {string|Date} dateStr 
+     * @returns {string}
+     */
+    formatTanggal(dateStr) {
+        if (!dateStr) return "Tanggal tidak valid";
+        try {
+            let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateStr).toLocaleDateString('id-ID', options);
+        } catch (e) {
+            return dateStr;
+        }
+    },
+
+    /**
+     * Format koordinat lintang/bujur agar rapi (4 angka dibelakang koma)
+     * @param {number} coord 
+     * @param {string} type ('lat' atau 'lon')
+     * @returns {string}
+     */
+    formatKoordinat(coord, type) {
+        if (typeof coord !== 'number') return "0.0000";
+        let abs = Math.abs(coord).toFixed(4);
+        if (type === 'lat') {
+            return coord >= 0 ? `${abs}° N` : `${abs}° S`;
+        } else {
+            return coord >= 0 ? `${abs}° E` : `${abs}° W`;
+        }
+    },
+
+    /**
+     * Mencegah XSS injection pada teks dinamis
+     * @param {string} str 
+     * @returns {string}
+     */
+    escapeHTML(str) {
+        if (!str) return "";
+        return str.replace(/[&<>'"]/g, 
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag)
+        );
+    },
+
+    /**
+     * Utilitas unduh file teks / data ke komputer klien
+     * @param {string} content 
+     * @param {string} filename 
+     * @param {string} contentType 
+     */
+    downloadFile(content, filename, contentType) {
+        let a = document.createElement('a');
+        let file = new Blob([content], { type: contentType });
+        a.href = URL.createObjectURL(file);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    },
+
+    /**
+     * Algoritma Ray-Casting sederhana untuk memeriksa apakah titik (lat, lon) 
+     * berada di dalam poligon GeoJSON (Berguna jika diperlukan validasi spasial cepat)
+     * @param {number} lat 
+     * @param {number} lon 
+     * @param {Array} vs (Koordinat ring poligon)
+     * @returns {boolean}
+     */
+    pointInPolygon(lat, lon, vs) {
+        let x = lon, y = lat;
+        let inside = false;
+        for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            let xi = vs[i][0], yi = vs[i][1];
+            let xj = vs[j][0], yj = vs[j][1];
+            let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+};

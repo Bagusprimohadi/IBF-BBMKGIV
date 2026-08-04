@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBF Operational WebGIS - BBMKG IV</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Modular CSS (Futuristik Command Theme) -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/legend.css">
+    <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+    <!-- Header Utama dengan Struktur Judul Standar Instansi -->
+    <div class="map-header">
+        <h3 id="systemSubtitle">Memuat sistem...</h3>
+        <h1 id="hazardTitle">Prediksi Risiko Dampak Wilayah BBMKG IV</h1>
+        <p id="validDateText">Valid: Memuat data...</p>
+    </div>
+
+    <!-- Logo di Ujung Kanan Atas -->
+    <div class="logo-container">
+        <img src="assets/logo.png" alt="Logo BMKG" class="logo-instansi" onerror="this.style.display='none'">
+    </div>
+
+    <!-- Kontrol Kanan Atas (Map Settings, Tombol Terpisah Bahaya & Risiko, serta Fullscreen) -->
+    <div class="top-right-controls">
+        <!-- 1. Map Settings Dropdown -->
+        <div class="dropdown-wrapper" id="mapSettingsDropdown">
+            <button class="dropdown-btn" onclick="toggleDropdown('mapSettingsDropdown')">🗺️ Map Settings ▾</button>
+            <div class="dropdown-content">
+                <button onclick="changeBasemap('dark')">🌙 Dark Matter (Gelap Operasional)</button>
+                <button onclick="changeBasemap('streets')">streets OpenStreetMap (Standar)</button>
+                <button onclick="changeBasemap('positron')">☀️ CartoDB Positron (Terang)</button>
+                <button onclick="changeBasemap('voyager')">🗺️ CartoDB Voyager (Jalan & Wilayah)</button>
+                <button onclick="changeBasemap('satellite')">🛰️ Esri World Imagery (Satelit)</button>
+                <button onclick="changeBasemap('topo')">⛰️ OpenTopoMap (Topografi)</button>
+            </div>
+        </div>
+
+        <!-- 2. Tombol Dropdown Terpisah: Potensi Bahaya (Hazard) -->
+        <div class="dropdown-wrapper" id="hazardDropdown">
+            <button class="dropdown-btn" onclick="toggleDropdown('hazardDropdown')">⚡ Potensi Bahaya ▾</button>
+            <div class="dropdown-content">
+                <button onclick="switchProduct('hazard', 'angin')">Angin Kencang (9 Kelas)</button>
+                <button onclick="switchProduct('hazard', 'banjir')">Banjir (Hazard)</button>
+                <button onclick="switchProduct('hazard', 'longsor')">Longsor (Hazard)</button>
+                <button onclick="switchProduct('hazard', 'suhu')">Udara Panas (Heat Stress)</button>
+                <button onclick="switchProduct('hazard', 'snorkling')">Aktivitas Snorkling</button>
+                <button onclick="switchProduct('hazard', 'diving')">Aktivitas Diving</button>
+            </div>
+        </div>
+
+        <!-- 3. Tombol Dropdown Terpisah: Dampak Risiko -->
+        <div class="dropdown-wrapper" id="risikoDropdown">
+            <button class="dropdown-btn" onclick="toggleDropdown('risikoDropdown')">⚠️ Dampak Risiko ▾</button>
+            <div class="dropdown-content">
+                <button onclick="switchProduct('risiko', 'risiko_banjir')">Risiko Dampak Banjir</button>
+                <button onclick="switchProduct('risiko', 'risiko_longsor')">Risiko Dampak Longsor</button>
+                <button onclick="switchProduct('risiko', 'risiko_snorkling')">Risiko Aktivitas Snorkling</button>
+                <button onclick="switchProduct('risiko', 'risiko_diving')">Risiko Aktivitas Diving</button>
+            </div>
+        </div>
+
+        <!-- 4. Tombol Fullscreen -->
+        <button class="dropdown-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+    </div>
+
+    <!-- Kontainer Peta Utama -->
+    <div id="map"></div>
+
+    <!-- Kotak Kontrol Kiri Bawah (Navigasi Waktu, Opacity Slider, & Legenda) -->
+    <div class="control-box">
+        <h4>Navigasi Waktu Prediksi</h4>
+        <div class="time-controls">
+            <div class="button-group" id="dayButtonsContainer"></div>
+            <div class="nav-playback-group">
+                <button class="action-btn" onclick="prevStep()">&laquo; Prev</button>
+                <button class="action-btn" id="playBtn" onclick="togglePlay()">&#9658; Play</button>
+                <button class="action-btn" onclick="nextStep()">Next &raquo;</button>
+            </div>
+        </div>
+
+        <!-- Slider Transparansi Overlay -->
+        <div class="opacity-control" style="margin-bottom: 12px;">
+            <label for="opacitySlider">
+                Transparansi Peta: <span id="opacityVal">85%</span>
+            </label>
+            <input type="range" id="opacitySlider" min="0" max="100" value="85" style="width: 100%; cursor: pointer;" oninput="updateOpacity(this.value)">
+        </div>
+
+        <h4>Legenda Peringatan</h4>
+        <div id="legendBox" class="legend-container"></div>
+    </div>
+
+    <!-- Watermark Pengembang -->
+    <div class="dev-watermark">Pengembang Bagus Primohadi - BBMKG IV</div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Modul JavaScript V1.1 (Struktur Terpisah) -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/basemap.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/overlay.js"></script>
+    <script src="js/playback.js"></script>
+    <script src="js/legend.js"></script>
+    <script src="js/opacity.js"></script>
+    <script src="js/fullscreen.js"></script>
+    <script src="js/hover.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/urlstate.js"></script>
+    <script src="js/popup.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

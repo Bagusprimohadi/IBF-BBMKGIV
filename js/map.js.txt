@@ -1,0 +1,74 @@
+// ==========================================
+// MAP.JS - INISISASI PETA UTAMA LEAFLET V1.1
+// ==========================================
+
+// Inisialisasi Objek Peta Utama
+var map = L.map('map', {
+    center: CONFIG.map.defaultCenter,
+    zoom: CONFIG.map.defaultZoom,
+    minZoom: 4,
+    maxZoom: 12,
+    zoomControl: true
+});
+
+// Variabel Global Layer Administrasi & Overlay
+let provinsiLayer = null;
+let kabupatenLayer = null;
+let currentImageOverlays = [];
+let activeOverlayData = null;
+
+/**
+ * Fungsi untuk memuat batas administrasi (Provinsi & Kabupaten) dari folder data/admin/
+ */
+function loadAdminBoundaries() {
+    // 1. Muat Batas Provinsi
+    fetch(CONFIG.paths.adminProvinsi)
+        .then(res => res.json())
+        .then(data => {
+            provinsiLayer = L.geoJSON(data, {
+                style: {
+                    color: "#38bdf8",
+                    weight: 1.8,
+                    fillColor: "transparent",
+                    fillOpacity: 0
+                }
+            }).addTo(map);
+        })
+        .catch(err => console.log("Batas provinsi belum dimuat atau file tidak ditemukan."));
+
+    // 2. Muat Batas Kabupaten / Kota (Dilengkapi Tooltip Nama Wilayah)
+    fetch(CONFIG.paths.adminKabupaten)
+        .then(res => res.json())
+        .then(data => {
+            kabupatenLayer = L.geoJSON(data, {
+                style: {
+                    color: "rgba(255, 255, 255, 0.4)",
+                    weight: 0.7,
+                    fillColor: "transparent",
+                    fillOpacity: 0
+                },
+                onEachFeature: function (feature, layer) {
+                    // Mendukung berbagai skema properti nama kabupaten (WADMKK, KABUPATEN, NAME, dll)
+                    let namaWilayah = feature.properties.WADMKK || feature.properties.kabupaten || feature.properties.NAME || "Wilayah";
+                    
+                    if (namaWilayah) {
+                        layer.bindTooltip(namaWilayah, {
+                            sticky: true,
+                            className: 'map-tooltip'
+                        });
+                    }
+
+                    // Menyiapkan event klik untuk fitur utama V1.1: Point Impact Report (popup.js)
+                    layer.on('click', function(e) {
+                        if (typeof window.handleMapClick === 'function') {
+                            window.handleMapClick(e, feature);
+                        }
+                    });
+                }
+            }).addTo(map);
+        })
+        .catch(err => console.log("Batas kabupaten belum dimuat atau file tidak ditemukan."));
+}
+
+// Inisialisasi Peta saat skrip dimuat
+loadAdminBoundaries();

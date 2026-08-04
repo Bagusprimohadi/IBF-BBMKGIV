@@ -1,0 +1,53 @@
+// ==========================================
+// FULLSCREEN.JS - PENGATURAN LAYAR PENUH V1.1
+// ==========================================
+
+/**
+ * Fungsi untuk mengaktifkan atau menonaktifkan mode layar penuh (Fullscreen)
+ */
+function toggleFullscreen() {
+    let elem = document.documentElement; // Mengambil seluruh halaman HTML
+
+    // Cek apakah browser sedang dalam mode fullscreen
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        // Masuk ke mode fullscreen
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) { /* Safari / Chrome lama */
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+            elem.msRequestFullscreen();
+        }
+    } else {
+        // Keluar dari mode fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+}
+
+/**
+ * Event listener untuk mendeteksi perubahan status fullscreen (opsional untuk mengubah ikon tombol)
+ */
+document.addEventListener("fullscreenchange", updateFullscreenButtonState);
+document.addEventListener("webkitfullscreenchange", updateFullscreenButtonState);
+document.addEventListener("msfullscreenchange", updateFullscreenButtonState);
+
+function updateFullscreenButtonState() {
+    let btn = document.getElementById('fullscreenBtn');
+    if (!btn) return;
+
+    let isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    
+    if (isFullscreen) {
+        btn.classList.add('is-fullscreen');
+        btn.title = "Keluar Layar Penuh";
+    } else {
+        btn.classList.remove('is-fullscreen');
+        btn.title = "Layar Penuh";
+    }
+}

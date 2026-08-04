@@ -1,5 +1,5 @@
 /* ==========================================
-   CONTROLS & INTERFACE - FUTURISTIC STYLE
+   CONTROLS & INTERFACE - FUTURISTIC STYLE V1.3
    ========================================== */
 
 /* --- KONTROL KANAN ATAS (DROPDOWN & TOMBOL) --- */
@@ -25,14 +25,15 @@
     -webkit-backdrop-filter: blur(12px);
     color: #f8fafc; 
     border: 1px solid rgba(56, 189, 248, 0.3); 
-    padding: 12px 20px;
+    padding: 10px 16px;
     border-radius: 10px; 
     cursor: pointer; 
     font-family: 'Inter', sans-serif;
-    font-size: 14px; 
+    font-size: 13px; 
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .dropdown-btn:hover { 
@@ -48,26 +49,26 @@
     background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    min-width: 280px; 
+    min-width: 260px; 
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(56, 189, 248, 0.3);
     border-radius: 12px; 
-    z-index: 1001; 
+    z-index: 1001; /* Wajib lebih tinggi dari tombol pembukanya */
     overflow: hidden; 
     margin-top: 8px;
-    max-height: 380px;
+    max-height: 320px;
     overflow-y: auto;
 }
 
 .dropdown-content button, .dropdown-content a {
     color: #cbd5e1; 
-    padding: 12px 18px; 
+    padding: 10px 16px; 
     text-align: left; 
     background: none;
     border: none; 
     width: 100%; 
     cursor: pointer; 
-    font-size: 13px; 
+    font-size: 12px; 
     font-weight: 500;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
     display: block;
@@ -80,7 +81,9 @@
     color: #38bdf8;
 }
 
-.dropdown-wrapper.active .dropdown-content { display: block; }
+.dropdown-wrapper.active .dropdown-content { 
+    display: block; 
+}
 
 
 /* --- KOTAK KONTROL KIRI BAWAH (WAKTU, PLAYBACK, SLIDER) --- */
@@ -93,17 +96,18 @@
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 20px; 
+    padding: 16px; 
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
-    width: 340px;
+    width: 320px;
+    max-width: calc(100vw - 50px);
     box-sizing: border-box;
 }
 
 .control-box h4 { 
     margin: 0 0 10px 0; 
     font-family: 'Orbitron', sans-serif;
-    font-size: 12px; 
+    font-size: 11px; 
     letter-spacing: 1px;
     text-transform: uppercase;
     color: #38bdf8;
@@ -112,7 +116,7 @@
 }
 
 .time-controls { 
-    margin-bottom: 14px; 
+    margin-bottom: 12px; 
     display: flex; 
     flex-direction: column; 
     gap: 8px; 
@@ -127,13 +131,14 @@
 
 .time-btn {
     flex: 1; 
+    min-width: 40px;
     background: rgba(30, 41, 59, 0.8); 
     border: 1px solid rgba(255, 255, 255, 0.1); 
     color: #e2e8f0;
-    padding: 8px 4px; 
+    padding: 7px 4px; 
     cursor: pointer; 
     border-radius: 6px; 
-    font-size: 12px; 
+    font-size: 11px; 
     font-weight: 600; 
     text-align: center;
     transition: all 0.2s;
@@ -165,7 +170,7 @@
     padding: 8px; 
     cursor: pointer; 
     border-radius: 6px; 
-    font-size: 12px; 
+    font-size: 11px; 
     font-weight: 600;
     transition: all 0.2s;
 }
@@ -183,7 +188,7 @@
 
 /* --- OPACITY SLIDER STYLING --- */
 .opacity-control {
-    margin-top: 12px;
+    margin-top: 10px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -193,7 +198,8 @@
     font-family: 'Orbitron', sans-serif;
     color: #94a3b8;
     letter-spacing: 0.5px;
-    display: block;
+    display: flex;
+    justify-content: space-between;
     margin-bottom: 6px;
 }
 
@@ -201,4 +207,47 @@ input[type=range] {
     accent-color: #38bdf8;
     cursor: pointer;
     width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+
+/* ==========================================
+   PENATAN RESPONSIVE LAYAR (LAPTOP & SMARTPHONE)
+   ========================================== */
+
+/* Layar HP / Mobile Devices (Lebar < 768px) */
+@media screen and (max-width: 767px) {
+    .top-right-controls {
+        top: 80px; /* Diturunkan agar tidak menutupi judul Header */
+        right: 12px;
+        left: 12px;
+        flex-direction: row;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .dropdown-btn {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+
+    .dropdown-content {
+        min-width: 220px;
+        right: 0;
+    }
+
+    .control-box {
+        bottom: 12px;
+        left: 12px;
+        width: calc(100vw - 24px); /* Lebar menyesuaikan layar HP */
+        padding: 12px;
+    }
+
+    /* Turunkan tombol zoom bawaan Leaflet agar tidak tertutup menu */
+    .leaflet-top.leaflet-left {
+        top: 80px !important;
+    }
 }

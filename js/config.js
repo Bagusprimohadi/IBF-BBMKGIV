@@ -22,7 +22,7 @@ const CONFIG = {
         hazard: {
             "angin": {
                 name: "Angin Kencang",
-                folder: "data/hazard/Angin Kencang/",
+                folder: "data/hazard/angin/",
                 subtitle: "IBF SWAF : Severe Wind Alert Forecast",
                 title: "Prediksi Bahaya Angin Kencang Indonesia",
                 prefix: "angin_day_",
@@ -41,7 +41,7 @@ const CONFIG = {
             },
             "banjir": {
                 name: "Banjir (Hazard)",
-                folder: "data/hazard/Banjir/",
+                folder: "data/hazard/banjir/",
                 subtitle: "IBF InaFLEWS : Indonesia Flood Landslide Early Warning System",
                 title: "Prediksi Potensi Bahaya Banjir Indonesia",
                 prefix: "banjir_day_",
@@ -55,7 +55,7 @@ const CONFIG = {
             },
             "longsor": {
                 name: "Longsor (Hazard)",
-                folder: "data/hazard/Longsor/",
+                folder: "data/hazard/longsor/",
                 subtitle: "IBF InaFLEWS : Indonesia Flood Landslide Early Warning System",
                 title: "Prediksi Potensi Bahaya Longsor Indonesia",
                 prefix: "longsor_day_",
@@ -69,7 +69,7 @@ const CONFIG = {
             },
             "suhu": {
                 name: "Udara Panas (Heat Stress)",
-                folder: "data/hazard/Udara Panas HeatStress/",
+                folder: "data/hazard/heatstres/",
                 subtitle: "IBF HELIOS : Heat Extreme Level Indicator System",
                 title: "Prediksi Potensi Udara Panas HeatStress Indonesia",
                 prefix: "suhu_day_",
@@ -83,7 +83,7 @@ const CONFIG = {
             },
             "snorkling": {
                 name: "Aktivitas Snorkling (Hazard)",
-                folder: "data/hazard/Snorkling/",
+                folder: "data/hazard/snorkling/",
                 subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlook",
                 title: "Prediksi Kondisi Keamanan Snorkling Indonesia",
                 prefix: "snorkling_day_",
@@ -97,7 +97,7 @@ const CONFIG = {
             },
             "diving": {
                 name: "Aktivitas Diving (Hazard)",
-                folder: "data/hazard/Diving/",
+                folder: "data/hazard/diving/",
                 subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlook",
                 title: "Prediksi Kondisi Keamanan Diving Indonesia",
                 prefix: "diving_day_",
@@ -115,7 +115,7 @@ const CONFIG = {
         risiko: {
             "risiko_banjir": {
                 name: "Risiko Dampak Banjir",
-                folder: "data/risiko/Banjir/",
+                folder: "data/risiko/banjir/",
                 subtitle: "IBF InaFLEWS : Indonesia Flood Landslide Early Warning System",
                 title: "Prediksi Risiko Dampak Banjir Indonesia",
                 prefix: "risiko_banjir_day_",
@@ -129,7 +129,7 @@ const CONFIG = {
             },
             "risiko_longsor": {
                 name: "Risiko Dampak Longsor",
-                folder: "data/risiko/Longsor/",
+                folder: "data/risiko/longsor/",
                 subtitle: "IBF InaFLEWS : Indonesia Flood Landslide Early Warning System",
                 title: "Prediksi Risiko Dampak Longsor Indonesia",
                 prefix: "risiko_longsor_day_",
@@ -143,7 +143,7 @@ const CONFIG = {
             },
             "risiko_snorkling": {
                 name: "Risiko Keamanan Snorkling",
-                folder: "data/risiko/Snorkling/",
+                folder: "data/risiko/snorkling/",
                 subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlookg",
                 title: "Prediksi Risiko Keamanan Snorkling Indonesia",
                 prefix: "risiko_snorkling_day_",
@@ -157,7 +157,7 @@ const CONFIG = {
             },
             "risiko_diving": {
                 name: "Risiko Keamanan Diving",
-                folder: "data/risiko/Diving/",
+                folder: "data/risiko/diving/",
                 subtitle: "IBF Maritim Snordiv Mariso : Snorkling & Diving Maritime Situational Outlook",
                 title: "Prediksi Risiko Keamanan Diving Indonesia",
                 prefix: "risiko_diving_day_",

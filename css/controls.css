@@ -200,4 +200,5 @@
 input[type=range] {
     accent-color: #38bdf8;
     cursor: pointer;
+    width: 100%;
 }

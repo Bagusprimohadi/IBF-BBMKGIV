@@ -1,5 +1,5 @@
 // ==========================================
-// APP.JS - ENTRY POINT UTAMA APLIKASI V1.3
+// APP.JS - ENTRY POINT UTAMA APLIKASI V1.1
 // ==========================================
 
 // ==========================================
@@ -24,13 +24,20 @@ function toggleDropdown(id) {
     }
 }
 
+/**
+ * Tutup semua menu dropdown yang terbuka
+ */
+function closeAllDropdowns() {
+    const dropdowns = document.querySelectorAll('.dropdown-wrapper');
+    dropdowns.forEach(dropdown => {
+        dropdown.classList.remove('active');
+    });
+}
+
 // Event Global: Menutup menu dropdown saat pengguna mengklik area luar menu / peta
 window.addEventListener('click', function (e) {
-    if (!e.target.matches('.dropdown-btn')) {
-        const dropdowns = document.querySelectorAll('.dropdown-wrapper');
-        dropdowns.forEach(dropdown => {
-            dropdown.classList.remove('active');
-        });
+    if (!e.target.matches('.dropdown-btn') && !e.target.closest('.dropdown-btn')) {
+        closeAllDropdowns();
     }
 });
 
@@ -40,10 +47,12 @@ window.addEventListener('click', function (e) {
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("🚀 Menginisialisasi IBF WebGIS Operational System - BBMKG IV...");
+    console.log("🚀 Menginisialisasi IBF WebGIS Operational System V1.1 - BBMKG IV...");
 
     // 1. Tampilkan indikator loading awal
-    if (typeof Loader !== 'undefined') {
+    if (typeof showLoader === 'function') {
+        showLoader();
+    } else if (typeof Loader !== 'undefined' && typeof Loader.show === 'function') {
         Loader.show("Menyiapkan Command Center WebGIS...");
     }
 
@@ -51,7 +60,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof initMap === 'function') {
         initMap();
     }
-    if (typeof initBasemap === 'function') {
+
+    if (typeof initBasemaps === 'function') {
+        initBasemaps();
+    } else if (typeof initBasemap === 'function') {
         initBasemap();
     }
 
@@ -68,11 +80,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // 5. Sembunyikan loader setelah inisialisasi selesai (jeda 800ms agar smooth)
+    // 5. Sembunyikan loader setelah inisialisasi selesai
     setTimeout(() => {
-        if (typeof Loader !== 'undefined') {
+        if (typeof hideLoader === 'function') {
+            hideLoader();
+        } else if (typeof Loader !== 'undefined' && typeof Loader.hide === 'function') {
             Loader.hide();
         }
-        console.log("✅ IBF WebGIS Berhasil Dimuat dan Siap Digunakan.");
+        console.log("✅ IBF WebGIS V1.1 Berhasil Dimuat dan Siap Digunakan.");
     }, 800);
 });

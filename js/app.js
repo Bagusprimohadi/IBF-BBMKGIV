@@ -1,5 +1,42 @@
 // ==========================================
-// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2
+// APP.JS - ENTRY POINT UTAMA APLIKASI V1.3
+// ==========================================
+
+// ==========================================
+// FUNGSI KONTROL UI GLOBAL
+// ==========================================
+
+/**
+ * Fungsi untuk membuka/menutup dropdown menu (Dipanggil langsung dari HTML)
+ * @param {string} id - ID dari container dropdown
+ */
+function toggleDropdown(id) {
+    const dropdown = document.getElementById(id);
+    if (dropdown) {
+        // 1. Tutup semua dropdown lain yang sedang terbuka agar tidak bertumpuk
+        const allDropdowns = document.querySelectorAll('.dropdown-wrapper');
+        allDropdowns.forEach(dw => {
+            if (dw.id !== id) dw.classList.remove('active');
+        });
+        
+        // 2. Buka/tutup dropdown yang sedang diklik
+        dropdown.classList.toggle('active');
+    }
+}
+
+// Event Global: Menutup menu dropdown saat pengguna mengklik area luar menu / peta
+window.addEventListener('click', function (e) {
+    if (!e.target.matches('.dropdown-btn')) {
+        const dropdowns = document.querySelectorAll('.dropdown-wrapper');
+        dropdowns.forEach(dropdown => {
+            dropdown.classList.remove('active');
+        });
+    }
+});
+
+
+// ==========================================
+// INISIALISASI SISTEM SAAT DOM SIAP
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -18,21 +55,11 @@ document.addEventListener("DOMContentLoaded", function () {
         initBasemap();
     }
 
-    // 3. Inisialisasi Kontrol Tambahan UI
+    // 3. Inisialisasi Kontrol Tambahan UI (Skala & Pencarian)
     if (typeof initScaleBar === 'function') initScaleBar();
     if (typeof initSearchControl === 'function') initSearchControl();
 
-    // 4. Penanganan Event Global: Tutup Dropdown saat Klik Luar
-    window.addEventListener('click', function (e) {
-        if (!e.target.matches('.dropdown-btn')) {
-            const dropdowns = document.querySelectorAll('.dropdown-wrapper');
-            dropdowns.forEach(dropdown => {
-                dropdown.classList.remove('active');
-            });
-        }
-    });
-
-    // 5. Tangani State awal aplikasi dari URL / Load default product
+    // 4. Tangani State awal aplikasi dari URL atau muat produk default
     if (typeof UrlState !== 'undefined' && typeof UrlState.applyInitialState === 'function') {
         UrlState.applyInitialState();
     } else {
@@ -41,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // 6. Sembunyikan loader setelah inisialisasi selesai
+    // 5. Sembunyikan loader setelah inisialisasi selesai (jeda 800ms agar smooth)
     setTimeout(() => {
         if (typeof Loader !== 'undefined') {
             Loader.hide();

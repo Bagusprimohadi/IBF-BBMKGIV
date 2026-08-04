@@ -1,14 +1,14 @@
 // ==========================================
-// PLAYBACK.JS - ANIMASI PEMUTARAN WAKTU V1.2
-// Selaras dengan H0, H+1, H+2 & Pure GeoJSON Vektor
+// PLAYBACK.JS - ANIMASI & KONTROL NAVIGASI HARI V1.4
+// Penanganan Otomatis Urutan Hari Tanpa Celah (H0 s/d H+n)
 // ==========================================
 
 let playInterval = null;
 let isPlaying = false;
-let playbackSpeed = 1500; // Kecepatan perpindahan (1500ms = 1.5 detik per hari agar animasi GeoJSON halus)
+let playbackSpeed = 1500; // Kecepatan perpindahan (1500ms per frame)
 
 /**
- * Mendapatkan total hari prediksi aktif dari CONFIG atau validDates
+ * Mendapatkan total hari prediksi aktif dari CONFIG produk atau window.validDates
  */
 function getTotalDays() {
     if (typeof currentCategory !== 'undefined' && typeof currentProductKey !== 'undefined') {
@@ -17,18 +17,56 @@ function getTotalDays() {
             return productConfig.days;
         }
     }
-    return (window.validDates && window.validDates.length > 0) ? window.validDates.length : 3;
+    return (window.validDates && window.validDates.length > 0) ? window.validDates.length : 7;
 }
 
 /**
- * Pindah ke langkah hari berikutnya (looping kembali ke H0 jika sudah di hari terakhir)
+ * Merender ulang tombol-tombol navigasi hari secara lengkap dan berurutan
+ * Memastikan tidak ada tombol yang bolong (misal: H0, H+1, H+2, dst.)
+ */
+function renderDayButtons() {
+    const container = document.getElementById('dayButtonsContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+    let total = getTotalDays();
+    window.validDates = [];
+
+    let today = new Date();
+
+    for (let i = 0; i < total; i++) {
+        let btn = document.createElement('button');
+        let label = `H${i === 0 ? '0' : '+' + i}`;
+
+        // Hitung tanggal riil untuk sinkronisasi metadata tampilan
+        let validDate = new Date(today);
+        validDate.setDate(today.getDate() + i);
+        let dateISO = validDate.toISOString().split('T')[0];
+        window.validDates.push(dateISO);
+
+        btn.className = 'time-btn' + (i === (window.currentIndex || 0) ? ' active' : '');
+        btn.id = 'day-btn-' + i;
+        btn.innerText = label;
+        btn.title = `Valid: ${dateISO}`;
+
+        btn.onclick = function () {
+            if (typeof stopPlay === 'function') stopPlay();
+            if (typeof loadDay === 'function') loadDay(i);
+        };
+
+        container.appendChild(btn);
+    }
+}
+
+/**
+ * Pindah ke langkah hari berikutnya (looping kembali ke H0 setelah hari terakhir)
  */
 function nextStep() {
     let total = getTotalDays();
     if (total > 0) {
         let curr = (typeof currentIndex !== 'undefined') ? currentIndex : 0;
         let nextIndex = (curr + 1) % total;
-        loadDay(nextIndex);
+        if (typeof loadDay === 'function') loadDay(nextIndex);
     }
 }
 
@@ -40,7 +78,7 @@ function prevStep() {
     if (total > 0) {
         let curr = (typeof currentIndex !== 'undefined') ? currentIndex : 0;
         let prevIndex = (curr - 1 + total) % total;
-        loadDay(prevIndex);
+        if (typeof loadDay === 'function') loadDay(prevIndex);
     }
 }
 
@@ -49,7 +87,7 @@ function prevStep() {
  */
 function togglePlay() {
     let total = getTotalDays();
-    if (total <= 1) return; // Tidak memutar jika hanya ada 1 hari data
+    if (total <= 1) return; // Tidak diputar jika hanya ada 1 hari data
     
     if (isPlaying) {
         stopPlay();
@@ -59,7 +97,7 @@ function togglePlay() {
 }
 
 /**
- * Menjalankan animasi pemutaran otomatis siklus hari (H0 -> H+1 -> H+2)
+ * Menjalankan animasi pemutaran otomatis siklus hari (H0 -> H+1 -> H+2 ...)
  */
 function startPlay() {
     if (isPlaying) return;
@@ -71,7 +109,6 @@ function startPlay() {
         btn.classList.add('playing');
     }
 
-    // Interval pemutaran otomatis
     playInterval = setInterval(() => {
         nextStep();
     }, playbackSpeed);

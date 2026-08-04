@@ -1,5 +1,5 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.2 (PURE GEOJSON)
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.3 (PURE GEOJSON)
 // ==========================================
 
 let currentCategory = 'hazard'; // Default kategori awal ('hazard' atau 'risiko')
@@ -90,6 +90,28 @@ function loadProductTimeline(category, productKey) {
 }
 
 /**
+ * Mendapatkan warna visual fitur dari atribut 'color' atau memetakan dari 'legends' config.js
+ */
+function getFeatureColor(feature, productConfig) {
+    let props = feature.properties || {};
+    
+    // 1. Jika Python mengirimkan warna HEX langsung
+    if (props.color) return props.color;
+
+    // 2. Fallback: Cari dari daftar legends di config.js berdasarkan level/kategori
+    if (productConfig && productConfig.legends && Array.isArray(productConfig.legends)) {
+        let valKey = String(props.level || props.kategori || props.code || '').toLowerCase();
+        let matched = productConfig.legends.find(l => 
+            String(l.level || l.label || l.code || '').toLowerCase() === valKey
+        );
+        if (matched && matched.color) return matched.color;
+    }
+
+    // 3. Default fallback warna cyan futuristik
+    return "#38bdf8";
+}
+
+/**
  * Memuat dan menampilkan file GeoJSON berdasarkan indeks hari (0, 1, 2)
  */
 function loadDay(index) {
@@ -130,19 +152,18 @@ function loadDay(index) {
             // Render GeoJSON ke Peta Leaflet
             activeOverlayLayer = L.geoJSON(geojsonData, {
                 style: function (feature) {
-                    // Ambil warna langsung dari kolom 'color' hasil olahan Python
-                    let fillColor = feature.properties.color || "#38bdf8";
+                    let fillColor = getFeatureColor(feature, productConfig);
                     return {
                         fillColor: fillColor,
                         weight: 1.5,
                         opacity: 0.9,
-                        color: "rgba(255, 255, 255, 0.4)", // Garis batas terang futuristik
+                        color: "rgba(255, 255, 255, 0.5)", // Garis batas terang futuristik
                         fillOpacity: currentOpacity // Mengikuti slider opacity aktif
                     };
                 },
                 // Penanganan khusus jika data geometri bertipe Point / Titik
                 pointToLayer: function (feature, latlng) {
-                    let fillColor = feature.properties.color || "#38bdf8";
+                    let fillColor = getFeatureColor(feature, productConfig);
                     return L.circleMarker(latlng, {
                         radius: 7,
                         fillColor: fillColor,
@@ -153,7 +174,7 @@ function loadDay(index) {
                     });
                 },
                 onEachFeature: function (feature, layer) {
-                    // Efek Hover Sorot Poligon
+                    // Event Sorot Mouseover & Klik
                     layer.on({
                         mouseover: function (e) {
                             let l = e.target;
@@ -169,13 +190,19 @@ function loadDay(index) {
                             if (activeOverlayLayer) {
                                 activeOverlayLayer.resetStyle(e.target);
                             }
+                        },
+                        click: function (e) {
+                            // Hentikan propagasi agar tidak bentrok dengan event klik peta dasar
+                            L.DomEvent.stopPropagation(e);
+                            
+                            // Panggil popup interaktif dan teruskan objek event e (latlng)
+                            if (typeof bindFeaturePopup === 'function') {
+                                bindFeaturePopup(feature, layer, productConfig, e);
+                            } else if (typeof generateGlobalPopup === 'function') {
+                                generateGlobalPopup(e, feature);
+                            }
                         }
                     });
-
-                    // Panggil popup interaktif dari popup.js saat fitur diklik
-                    if (typeof bindFeaturePopup === 'function') {
-                        bindFeaturePopup(feature, layer, productConfig);
-                    }
                 }
             }).addTo(map);
 

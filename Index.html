@@ -8,7 +8,7 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Modular CSS (Futuristik Command Theme) -->
+    <!-- Modular CSS (Futuristik Command Theme V1.2) -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/controls.css">
     <link rel="stylesheet" href="css/legend.css">
@@ -27,14 +27,14 @@
         <img src="assets/logo.jpeg" alt="Logo BMKG" class="logo-instansi" onerror="this.style.display='none'">
     </div>
 
-    <!-- Kontrol Kanan Atas (Map Settings, Tombol Terpisah Bahaya & Risiko, serta Fullscreen) -->
+    <!-- Kontrol Kanan Atas (Map Settings, Dropdown Bahaya & Risiko, serta Fullscreen) -->
     <div class="top-right-controls">
         <!-- 1. Map Settings Dropdown -->
         <div class="dropdown-wrapper" id="mapSettingsDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('mapSettingsDropdown')">🗺️ Map Settings ▾</button>
             <div class="dropdown-content">
                 <button onclick="changeBasemap('dark')">🌙 Dark Matter (Gelap Operasional)</button>
-                <button onclick="changeBasemap('streets')">streets OpenStreetMap (Standar)</button>
+                <button onclick="changeBasemap('streets')">🛣️ OpenStreetMap (Standar)</button>
                 <button onclick="changeBasemap('positron')">☀️ CartoDB Positron (Terang)</button>
                 <button onclick="changeBasemap('voyager')">🗺️ CartoDB Voyager (Jalan & Wilayah)</button>
                 <button onclick="changeBasemap('satellite')">🛰️ Esri World Imagery (Satelit)</button>
@@ -73,7 +73,7 @@
     <!-- Kontainer Peta Utama -->
     <div id="map"></div>
 
-    <!-- Kotak Kontrol Kiri Bawah (Navigasi Waktu, Opacity Slider, & Legenda) -->
+    <!-- Kotak Kontrol Kiri Bawah (Navigasi Waktu & Opacity Slider) -->
     <div class="control-box">
         <h4>Navigasi Waktu Prediksi</h4>
         <div class="time-controls">
@@ -85,16 +85,27 @@
             </div>
         </div>
 
-        <!-- Slider Transparansi Overlay -->
-        <div class="opacity-control" style="margin-bottom: 12px;">
+        <!-- Slider Transparansi Overlay Layer GeoJSON -->
+        <div class="opacity-control">
             <label for="opacitySlider">
-                Transparansi Peta: <span id="opacityVal">85%</span>
+                Transparansi Peta: <span id="opacityVal">65%</span>
             </label>
-            <input type="range" id="opacitySlider" min="0" max="100" value="85" style="width: 100%; cursor: pointer;" oninput="updateOpacity(this.value)">
+            <input type="range" id="opacitySlider" min="0" max="100" value="65" style="width: 100%; cursor: pointer;" oninput="updateOpacity(this.value)">
         </div>
+    </div>
 
-        <h4>Legenda Peringatan</h4>
-        <div id="legendBox" class="legend-container"></div>
+    <!-- Wrapper Legenda Kanan Bawah dengan Fitur Collapsible Slide Hide/Show -->
+    <div id="legendPanelWrapper" class="legend-wrapper">
+        <!-- Tombol Penanda Buka/Tutup Legenda yang Tetap Terlihat di Layar -->
+        <button id="legendToggleBtn" class="legend-toggle-btn" title="Sembunyikan Legenda">
+            🎨 Legenda ◄
+        </button>
+        
+        <!-- Kotak Legenda Utama -->
+        <div class="control-box" style="position: relative; bottom: 0; left: 0; width: 260px;">
+            <h4>Legenda Peringatan</h4>
+            <div id="legendBox" class="legend-container"></div>
+        </div>
     </div>
 
     <!-- Watermark Pengembang -->
@@ -103,7 +114,7 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Modul JavaScript V1.1 (Struktur Terpisah) -->
+    <!-- Modul JavaScript V1.2 (Pure GeoJSON WebGIS) -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/basemap.js"></script>

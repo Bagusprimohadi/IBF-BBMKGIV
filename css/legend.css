@@ -85,3 +85,19 @@
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
+
+/* ==========================================
+   KUSTOMISASI KHUSUS BARIS TINGKAT STATUS (LATAR BELAKANG HITAM)
+   ========================================== */
+
+/* Targetkan baris (tr) tabel yang mengandung sel status */
+.impact-table tr:has(.status-cell) td {
+    background-color: #0f172a !important; /* Latar belakang hitam pekat/slate gelap */
+    color: #ffffff !important;            /* Teks label baris menjadi putih */
+    border-color: #334155 !important;     /* Penyesuaian garis batas agar senada */
+}
+
+/* Pastikan teks label di baris tersebut tetap terbaca jelas dengan warna putih */
+.impact-table tr:has(.status-cell) .day-label {
+    color: #f8fafc !important; 
+}

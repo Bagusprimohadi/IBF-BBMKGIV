@@ -1,11 +1,23 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.1
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.2
 // ==========================================
 
 let currentCategory = 'hazard'; 
 let currentProductKey = 'angin'; 
 let currentOpacity = 0.65; 
 let activeOverlayLayer = null; 
+
+/**
+ * Memaksa layer administrasi (Kabupaten & Provinsi) tetap berada di atas overlay hazard
+ */
+function keepAdminBoundariesOnTop() {
+    if (typeof kabupatenLayer !== 'undefined' && kabupatenLayer && map.hasLayer(kabupatenLayer)) {
+        kabupatenLayer.bringToFront();
+    }
+    if (typeof provinsiLayer !== 'undefined' && provinsiLayer && map.hasLayer(provinsiLayer)) {
+        provinsiLayer.bringToFront();
+    }
+}
 
 function switchProduct(category, productKey) {
     if (typeof stopPlay === 'function') stopPlay();
@@ -124,7 +136,7 @@ function loadDay(index) {
                     let fillColor = getFeatureColor(feature, productConfig);
                     return {
                         fillColor: fillColor,
-                        stroke: false, // OFF-kan borderline poligon (seperti tampilan PNG/Raster biasa)
+                        stroke: false, // OFF-kan borderline poligon hazard
                         weight: 0,
                         fillOpacity: currentOpacity 
                     };
@@ -140,7 +152,6 @@ function loadDay(index) {
                 },
                 onEachFeature: function (feature, layer) {
                     layer.on({
-                        // Pointer mouse biasa tanpa efek hover tebal borderline
                         click: function (e) {
                             L.DomEvent.stopPropagation(e);
                             if (typeof bindFeaturePopup === 'function') {
@@ -151,14 +162,14 @@ function loadDay(index) {
                 }
             }).addTo(map);
 
-            // PENYESUAIAN HIERARKI LAYER MARITIM (POIN 2)
-            // Jika produk maritim (snorkling/diving), taruh layer di paling bawah
+            // PENYESUAIAN HIERARKI LAYER (PEMBAHARUAN V1.2)
             if (currentProductKey.includes('snorkling') || currentProductKey.includes('diving')) {
+                // Produk maritim: ditaruh paling bawah di bawah daratan
                 activeOverlayLayer.bringToBack();
-                if (typeof kabupatenLayer !== 'undefined' && kabupatenLayer) {
-                    kabupatenLayer.bringToFront(); // Wilayah daratan & admin berada di atasnya
-                }
             }
+            
+            // PAKSA GARIS BATAS ADMINISTRASI KEMBALI KE PALING ATAS
+            keepAdminBoundariesOnTop();
 
             // Update status tombol aktif di UI
             let totalDays = productConfig.days || 3;

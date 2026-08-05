@@ -1,5 +1,5 @@
 // ==========================================
-// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.9 (DUAL LAYER FIX)
+// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V2.0 (FINAL PERFECT FIX)
 // ==========================================
 
 // Variabel Global Instance Peta
@@ -26,24 +26,40 @@ function initMap() {
     });
 
     // 1. PANE BAWAH (Z-Index 390: Di bawah overlay Hazard)
-    // Menangkap klik area kosong untuk memunculkan nama kabupaten
     map.createPane('paneKabupatenBase');
     map.getPane('paneKabupatenBase').style.zIndex = 390;
 
     // 2. PANE ATAS (Z-Index 601 & 602: Di atas overlay Hazard)
-    // Hanya untuk menggambar garis batas agar tidak tertutup transparansi
     map.createPane('paneKabupatenTop');
     map.getPane('paneKabupatenTop').style.zIndex = 601;
-    map.getPane('paneKabupatenTop').style.pointerEvents = 'none'; // Klik tembus ke bawah
+    map.getPane('paneKabupatenTop').style.pointerEvents = 'none'; // Kunci agar klik tembus ke bawah
 
     map.createPane('paneProvinsiTop');
     map.getPane('paneProvinsiTop').style.zIndex = 602;
-    map.getPane('paneProvinsiTop').style.pointerEvents = 'none'; // Klik tembus ke bawah
+    map.getPane('paneProvinsiTop').style.pointerEvents = 'none'; // Kunci agar klik tembus ke bawah
 
     // Tombol Zoom di Kanan Bawah
     L.control.zoom({
         position: 'bottomright'
     }).addTo(map);
+
+    // Event Klik Global Peta (Untuk area kosong/luar poligon)
+    map.on('click', function (e) {
+        let foundAdmin = null;
+        
+        // Cari kabupaten di koordinat klik
+        if (kabupatenLayerBase) {
+            kabupatenLayerBase.eachLayer(function (layer) {
+                if (layer.getBounds && layer.getBounds().contains(e.latlng)) {
+                    foundAdmin = layer.feature;
+                }
+            });
+        }
+
+        if (typeof generateGlobalPopup === 'function') {
+            generateGlobalPopup(e, foundAdmin);
+        }
+    });
 
     // Memuat layer batas administrasi
     loadAdminBoundaries();
@@ -65,14 +81,13 @@ function loadAdminBoundaries() {
                 return res.json();
             })
             .then(data => {
-                // LAYER A: BASE INTERAKTIF (Tersembunyi di bawah Hazard)
-                // Mengirimkan data properti (Nama Kabupaten) ke Pop-Up saat diklik
+                // LAYER A: BASE INTERAKTIF (Tersembunyi di bawah Hazard untuk pembacaan nama wilayah)
                 kabupatenLayerBase = L.geoJSON(data, {
                     pane: 'paneKabupatenBase',
                     style: {
                         weight: 0,
                         fillColor: "#ffffff",
-                        fillOpacity: 0.001, // Hampir tidak terlihat tapi menangkap klik
+                        fillOpacity: 0.001,
                         color: "transparent"
                     },
                     onEachFeature: function (feature, layer) {
@@ -91,29 +106,27 @@ function loadAdminBoundaries() {
                         layer.on('click', function (e) {
                             L.DomEvent.stopPropagation(e);
                             if (typeof generateGlobalPopup === 'function') {
-                                generateGlobalPopup(e, feature); // Mengirim data "feature" kabupaten ke popup
-                            } else if (typeof window.handleMapClick === 'function') {
-                                window.handleMapClick(e, feature);
+                                generateGlobalPopup(e, feature);
                             }
                         });
                     }
                 }).addTo(map);
 
-                // LAYER B: VISUAL GARIS ATAS (Hanya menggambar garis hitam)
+                // LAYER B: VISUAL GARIS ATAS (Hitam Murni Sesuai versi 1.0)
                 kabupatenLayerVisual = L.geoJSON(data, {
                     pane: 'paneKabupatenTop',
                     style: {
-                        color: "rgba(100, 116, 139, 0.4)",
-                        weight: 1.5,
+                        color: "rgba(100, 116, 139, 0.4)",        // Garis hitam murni mutlak v1.0
+                        weight: 0.8,             // Ketebalan 0.8px Sesuai v1.0
                         opacity: 1,
-                        fill: false // Mencegah pemblokiran visual
+                        fill: false
                     }
                 }).addTo(map);
             })
             .catch(err => console.warn("Peringatan Admin Kabupaten:", err.message));
     }
 
-    // 2. Muat GeoJSON Provinsi (Hanya Visual)
+    // 2. Muat GeoJSON Provinsi (Hitam Murni Sesuai versi 1.0)
     if (CONFIG.paths && CONFIG.paths.adminProvinsi) {
         fetch(CONFIG.paths.adminProvinsi)
             .then(res => {
@@ -124,8 +137,8 @@ function loadAdminBoundaries() {
                 provinsiLayer = L.geoJSON(data, {
                     pane: 'paneProvinsiTop',
                     style: {
-                        color: "#0284c7",
-                        weight: 2.5,
+                        color: "#0284c7",        // Garis hitam murni mutlak v1.0
+                        weight: 2.0,             // Ketebalan 2.0px Sesuai v1.0
                         opacity: 1,
                         fill: false
                     }

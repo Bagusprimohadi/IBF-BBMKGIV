@@ -285,3 +285,71 @@ input[type=range] {
         right: 12px !important;
     }
 }
+
+/* ==========================================
+   TAMBAHAN BARU: FITUR COLLAPSE PANEL MOBILE
+   ========================================== */
+
+.panel-header-mobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.panel-header-mobile h4 {
+    margin: 0 !important;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f172a;
+    text-transform: uppercase;
+}
+
+.btn-toggle-panel {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.25s ease;
+}
+
+.panel-body-content {
+    transition: max-height 0.3s ease, opacity 0.25s ease;
+    max-height: 800px;
+    opacity: 1;
+}
+
+/* Kondisi ketika panel terlipat ke bawah (Minimize) */
+.left-bottom-panel.collapsed .panel-body-content {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.left-bottom-panel.collapsed .btn-toggle-panel {
+    transform: rotate(180deg);
+}
+
+/* Penyesuaian khusus tampilan layar HP (< 768px) */
+@media screen and (max-width: 767px) {
+    .left-bottom-panel {
+        bottom: 12px !important;
+        left: 12px !important;
+        width: calc(100vw - 24px) !important;
+        max-height: 45vh;
+        padding: 10px 12px !important;
+        box-sizing: border-box;
+    }
+
+    .panel-body-content {
+        max-height: 35vh;
+        overflow-y: auto;
+    }
+}

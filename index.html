@@ -21,7 +21,7 @@
     <!-- 1. Header Utama -->
     <div class="map-header">
         <h3 id="systemSubtitle">Memuat sistem...</h3>
-        <h1 id="hazardTitle">Prediksi Risiko Dampak Wilayah BBMKG IV</h1>
+        <h1 id="hazardTitle">Prediksi Risiko Dampak IBF BBMKG IV</h1>
         <p id="validDateText">Valid: Memuat data...</p>
     </div>
 
@@ -36,10 +36,10 @@
         <div class="dropdown-wrapper" id="mapSettingsDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('mapSettingsDropdown')">🗺️ Map Settings ▾</button>
             <div class="dropdown-content">
-                <button onclick="changeBasemap('dark')">🌙 Dark Matter (Gelap Operasional)</button>
+                <button onclick="changeBasemap('dark')">🌙 Dark Matter (Gelap)</button>
                 <button onclick="changeBasemap('streets')">🛣️ OpenStreetMap (Standar)</button>
                 <button onclick="changeBasemap('positron')">☀️ CartoDB Positron (Terang)</button>
-                <button onclick="changeBasemap('voyager')">🗺️ CartoDB Voyager (Jalan & Wilayah)</button>
+                <button onclick="changeBasemap('voyager')">🗺️ CartoDB Voyager (Jalan)</button>
                 <button onclick="changeBasemap('satellite')">🛰️ Esri World Imagery (Satelit)</button>
                 <button onclick="changeBasemap('topo')">⛰️ OpenTopoMap (Topografi)</button>
             </div>
@@ -49,12 +49,12 @@
         <div class="dropdown-wrapper" id="hazardDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('hazardDropdown')">⚡ Potensi Bahaya ▾</button>
             <div class="dropdown-content">
-                <button onclick="switchProduct('hazard', 'angin')">Angin Kencang (Hazard)</button>
-                <button onclick="switchProduct('hazard', 'banjir')">Banjir (Hazard)</button>
-                <button onclick="switchProduct('hazard', 'longsor')">Longsor (Hazard)</button>
-                <button onclick="switchProduct('hazard', 'suhu')">Heat Stress Udara Panas (Hazard)</button>
-                <button onclick="switchProduct('hazard', 'snorkling')">Bahaya Aktivitas Snorkling</button>
-                <button onclick="switchProduct('hazard', 'diving')">Bahaya Aktivitas Diving</button>
+                <button onclick="switchProduct('hazard', 'angin')">Angin Kencang</button>
+                <button onclick="switchProduct('hazard', 'banjir')">Banjir</button>
+                <button onclick="switchProduct('hazard', 'longsor')">Longsor</button>
+                <button onclick="switchProduct('hazard', 'suhu')">Heat Stress Udara Panas</button>
+                <button onclick="switchProduct('hazard', 'snorkling')">Keamanan Snorkling</button>
+                <button onclick="switchProduct('hazard', 'diving')">Keamanan Diving</button>
             </div>
         </div>
 
@@ -64,8 +64,8 @@
             <div class="dropdown-content">
                 <button onclick="switchProduct('risiko', 'risiko_banjir')">Risiko Dampak Banjir</button>
                 <button onclick="switchProduct('risiko', 'risiko_longsor')">Risiko Dampak Longsor</button>
-                <button onclick="switchProduct('risiko', 'risiko_snorkling')">Risiko Aktivitas Snorkling</button>
-                <button onclick="switchProduct('risiko', 'risiko_diving')">Risiko Aktivitas Diving</button>
+                <button onclick="switchProduct('risiko', 'risiko_snorkling')">Risiko Keamanan Snorkling</button>
+                <button onclick="switchProduct('risiko', 'risiko_diving')">Risiko Keamanan Diving</button>
             </div>
         </div>
 

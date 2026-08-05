@@ -1,18 +1,11 @@
 // ==========================================
-// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.1 (STANDALONE SPATIAL SCANNER)
-// Memperbaiki bug tanggal 2001 & deteksi spasial tanpa Turf.js
+// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.2 (ULTIMATE ACCURACY FIX)
+// - Integrasi Tanggal Validitas dari Metadata (Sinkron dengan H0)
+// - Color-First Matching & Severity Sort untuk overlap polygon
 // ==========================================
 
 /**
- * Normalisasi string nama wilayah
- */
-function normalizeName(str) {
-    if (!str) return "";
-    return String(str).toLowerCase().replace(/^(kabupaten|kab\.|kota)\s+/gi, '').replace(/[^a-z0-9]/g, '').trim();
-}
-
-/**
- * Fetch GeoJSON (Silently fail jika file H+x belum ada/404)
+ * Fetch GeoJSON dengan penanganan error
  */
 async function fetchGeoJSON(url) {
     try {
@@ -25,14 +18,13 @@ async function fetchGeoJSON(url) {
 }
 
 /**
- * Algoritma Matematika Murni (Ray-Casting) untuk mengecek apakah titik (lat, lon) berada di dalam Poligon.
- * Bekerja 100% akurat tanpa membutuhkan library Turf.js atau nama kabupaten.
+ * Algoritma Matematika Murni (Ray-Casting) untuk mengecek posisi kursor
  */
 function isPointInPolygonMath(lat, lon, feature) {
     if (!feature || !feature.geometry || !feature.geometry.coordinates) return false;
     
-    let x = lon; // Longitude adalah sumbu X
-    let y = lat; // Latitude adalah sumbu Y
+    let x = lon;
+    let y = lat;
     let type = feature.geometry.type;
     let coords = feature.geometry.coordinates;
 
@@ -48,7 +40,7 @@ function isPointInPolygonMath(lat, lon, feature) {
     }
 
     if (type === 'Polygon') {
-        return checkPolygon(coords[0]); // Ambil ring terluar
+        return checkPolygon(coords[0]);
     } else if (type === 'MultiPolygon') {
         for (let i = 0; i < coords.length; i++) {
             if (checkPolygon(coords[i][0])) return true;
@@ -58,39 +50,29 @@ function isPointInPolygonMath(lat, lon, feature) {
 }
 
 /**
- * Pengecekan Hibrid: Utamakan Koordinat Spasial (Ray-Casting), baru fallback ke string.
- */
-function findActiveFeature(geojsonData, targetName, lat, lon) {
-    if (!geojsonData || !geojsonData.features) return null;
-    let normTarget = normalizeName(targetName);
-    
-    return geojsonData.features.find(f => {
-        // 1. Pengecekan Koordinat Spasial Mutlak (Akurasi Tinggi)
-        if (lat && lon && isPointInPolygonMath(lat, lon, f)) {
-            return true;
-        }
-        
-        // 2. Fallback Pengecekan Nama (Jika koordinat meleset sedikit)
-        let p = f.properties || {};
-        let hName = p.kabupaten || p.WADMKK || p.NAME_2 || p.NAMOBJ || "";
-        if (hName && normalizeName(hName) === normTarget) return true;
-        
-        return false;
-    });
-}
-
-/**
- * Membaca status bahaya berdasarkan Legenda Config
+ * Membaca status bahaya: 
+ * Prioritas 1 = Cocokkan WARNA (Karena visual warna tidak pernah bohong)
  */
 function getStatusInfo(props, prodConfig) {
-    let label = props.kategori || props.level || props.status || props.dampak || "Waspada";
+    let label = props.level || props.status || props.kategori || props.dampak || "Waspada";
     let color = props.color || props.hex_color || props.fill || "#ef4444";
     let isSafe = false;
     
     let textKey = String(label).toLowerCase().trim();
+    let colorKey = String(color).toUpperCase().trim();
+    
     if (prodConfig && Array.isArray(prodConfig.legends)) {
-        let matched = prodConfig.legends.find(l => String(l.level || l.label || l.code || '').toLowerCase().trim() === textKey);
-        if (!matched) matched = prodConfig.legends.find(l => String(l.color).toUpperCase().trim() === String(color).toUpperCase().trim());
+        let matched = null;
+        
+        // 1. PRIORITAS UTAMA: Cocokkan Warna
+        matched = prodConfig.legends.find(l => String(l.color).toUpperCase().trim() === colorKey);
+        
+        // 2. Jika warna tidak ada/gagal, baru cocokkan Teks
+        if (!matched) {
+            matched = prodConfig.legends.find(l => String(l.level || l.label || l.code || '').toLowerCase().trim() === textKey);
+        }
+        
+        // 3. Timpa nilai dengan label resmi dari Legends
         if (matched) {
             label = matched.label || matched.level || label;
             color = matched.color || color;
@@ -98,7 +80,7 @@ function getStatusInfo(props, prodConfig) {
     }
     
     let lblLower = String(label).toLowerCase();
-    if (lblLower.includes("aman") || lblLower.includes("nyaman") || lblLower.includes("rendah") || lblLower.includes("tidak ada") || color.toLowerCase() === '#00ff00' || color === 'transparent') {
+    if (lblLower.includes("aman") || lblLower.includes("nyaman") || lblLower.includes("rendah") || lblLower.includes("tidak ada") || color.toLowerCase() === '#00ff00' || color.toLowerCase() === '#10b981' || color === 'transparent') {
         isSafe = true;
     }
     
@@ -106,23 +88,63 @@ function getStatusInfo(props, prodConfig) {
 }
 
 /**
- * Generator Tanggal Bahasa Indonesia Tahan Banting (Anti-Bug 2001)
+ * Pengecekan Spasial & Severity Sorting (Mencegah salah baca jika poligon tumpang tindih)
  */
-function generateSafeIndonesianDate(addDays) {
-    let d = new Date();
-    d.setDate(d.getDate() + addDays);
+function findActiveFeature(geojsonData, lat, lon, prodConfig) {
+    if (!geojsonData || !geojsonData.features) return null;
     
-    let days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    let months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    // Cari SEMUA poligon yang beririsan dengan klik kursor
+    let intersectingFeatures = geojsonData.features.filter(f => isPointInPolygonMath(lat, lon, f));
     
-    return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    if (intersectingFeatures.length === 0) return null;
+    if (intersectingFeatures.length === 1) return intersectingFeatures[0];
+    
+    // Jika ada >1 poligon bertumpuk (misal Siaga di atas Waspada), pilih level yang paling parah (berdasarkan urutan legenda)
+    if (prodConfig && prodConfig.legends) {
+        intersectingFeatures.sort((a, b) => {
+            let sA = getStatusInfo(a.properties, prodConfig);
+            let sB = getStatusInfo(b.properties, prodConfig);
+            let idxA = prodConfig.legends.findIndex(l => (l.label || l.level) === sA.label);
+            let idxB = prodConfig.legends.findIndex(l => (l.label || l.level) === sB.label);
+            return idxB - idxA; // Semakin ke bawah di legenda, makin parah (Waspada -> Siaga -> Awas)
+        });
+    }
+    
+    return intersectingFeatures[0];
 }
 
 /**
- * Memicu pencetakan laporan analisis dampak (Dirombak Async)
+ * Sinkronisasi Tanggal dengan Data window.validDates dari metadata.geojson
+ */
+function getValidDateString(dayIndex) {
+    let baseDate = new Date(); // Fallback
+    
+    if (window.validDates && window.validDates.length > 0) {
+        let dStr = window.validDates[dayIndex];
+        if (!dStr) dStr = window.validDates[window.validDates.length - 1]; // Fallback ke hari terakhir jika habis
+        
+        // Memaksa parsing format YYYY-MM-DD secara mutlak tanpa terpengaruh Zona Waktu
+        let parts = dStr.split('-');
+        if (parts.length === 3) {
+            baseDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+            baseDate = new Date(dStr);
+        }
+    } else {
+        // Jika data config kosong, baru hitung manual dari hari ini
+        baseDate.setDate(baseDate.getDate() + dayIndex);
+    }
+
+    let days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    let months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    
+    return `${days[baseDate.getDay()]}, ${baseDate.getDate()} ${months[baseDate.getMonth()]} ${baseDate.getFullYear()}`;
+}
+
+/**
+ * Memicu pencetakan laporan analisis dampak
  */
 async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lon) {
-    // Tampilkan Indikator Loading di UI
     let btn = document.querySelector('.btn-export');
     let originalBtnText = btn ? btn.innerHTML : '📄 Unduh Laporan (PDF)';
     if (btn) {
@@ -130,27 +152,24 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
         btn.disabled = true;
     }
 
-    // Jeda 50ms agar browser merender tombol UI dulu sebelum proses berat dimulai
     await new Promise(resolve => setTimeout(resolve, 50));
 
     let coordText = (typeof Utils !== 'undefined' && typeof Utils.formatKoordinat === 'function') ? `${Utils.formatKoordinat(lat, 'lat')}, ${Utils.formatKoordinat(lon, 'lon')}` : `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
     let printTime = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' });
     let tableRowsHTML = '';
 
-    // Loop 7 Hari (H0 s/d H+6)
     for (let i = 0; i < 7; i++) {
         let dayLabel = i === 0 ? 'H0' : `H+${i}`;
-        let safeDateString = generateSafeIndonesianDate(i);
+        let safeDateString = getValidDateString(i);
         
         let warningsBahaya = [];
         let warningsRisiko = [];
 
-        // Scan Paralel Semua File Hazard di Hari (i)
         if (CONFIG && CONFIG.products && CONFIG.products.hazard) {
             let hazardPromises = Object.values(CONFIG.products.hazard).map(async (prod) => {
                 let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
                 let geojson = await fetchGeoJSON(url);
-                let feat = findActiveFeature(geojson, namaWilayah, lat, lon);
+                let feat = findActiveFeature(geojson, lat, lon, prod);
                 if (feat) {
                     let stat = getStatusInfo(feat.properties, prod);
                     if (!stat.isSafe) return `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
@@ -161,12 +180,11 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             warningsBahaya = results.filter(r => r !== null);
         }
 
-        // Scan Paralel Semua File Risiko di Hari (i)
         if (CONFIG && CONFIG.products && CONFIG.products.risiko) {
             let risikoPromises = Object.values(CONFIG.products.risiko).map(async (prod) => {
                 let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
                 let geojson = await fetchGeoJSON(url);
-                let feat = findActiveFeature(geojson, namaWilayah, lat, lon);
+                let feat = findActiveFeature(geojson, lat, lon, prod);
                 if (feat) {
                     let stat = getStatusInfo(feat.properties, prod);
                     if (!stat.isSafe) return `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
@@ -177,7 +195,6 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             warningsRisiko = results.filter(r => r !== null);
         }
 
-        // Format Teks Baris Tabel
         let textBahaya = warningsBahaya.length > 0 ? warningsBahaya.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Tidak Ada Peringatan</span>';
         let textRisiko = warningsRisiko.length > 0 ? warningsRisiko.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Risiko Rendah</span>';
 
@@ -191,13 +208,11 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
         `;
     }
 
-    // Kembalikan tombol popup seperti semula
     if (btn) {
         btn.innerHTML = originalBtnText;
         btn.disabled = false;
     }
 
-    // Build HTML & Buka Jendela Print
     let printWindow = window.open('', '_blank', 'width=1000,height=900');
     
     let htmlContent = `

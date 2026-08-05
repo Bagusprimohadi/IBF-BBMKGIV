@@ -1,5 +1,8 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.2
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.3
+// - Support Full 7-Days Timeline
+// - Specific Offset Labeling for Banjir & Longsor (H-1 to H+5)
+// - Graceful Fallback & Error Handling
 // ==========================================
 
 let currentCategory = 'hazard'; 
@@ -64,15 +67,34 @@ function loadProductTimeline(category, productKey) {
         btnContainer.innerHTML = "";
     }
 
-    let totalDays = productConfig.days || 3;
+    // Default ke 7 hari jika config tidak terdefinisi
+    let totalDays = productConfig.days || 7;
     window.validDates = Array.from({ length: totalDays }, (_, i) => `Hari ke-${i + 1}`); 
+
+    // Cek apakah produk aktif termasuk dalam 4 parameter khusus (Banjir & Longsor)
+    let isOffsetProduct = ['banjir', 'longsor', 'risiko_banjir', 'risiko_longsor'].includes(productKey);
 
     for (let i = 0; i < totalDays; i++) {
         if (btnContainer) {
             let btn = document.createElement('button');
             btn.className = 'time-btn';
             btn.id = 'day-btn-' + i;
-            btn.innerText = `H${i === 0 ? '0' : '+' + i}`; 
+            
+            // LOGIKA LABEL TOMBOL:
+            if (isOffsetProduct) {
+                // Indeks 0 = H-1, Indeks 1 = H0, Indeks 2 = H+1, ..., Indeks 6 = H+5
+                if (i === 0) {
+                    btn.innerText = 'H-1';
+                } else if (i === 1) {
+                    btn.innerText = 'H0';
+                } else {
+                    btn.innerText = `H+${i - 1}`;
+                }
+            } else {
+                // Normal: Indeks 0 = H0, Indeks 1 = H+1, ..., Indeks 6 = H+6
+                btn.innerText = `H${i === 0 ? '0' : '+' + i}`; 
+            }
+
             btn.onclick = function() {    
                 if (typeof stopPlay === 'function') stopPlay();    
                 loadDay(i);    
@@ -118,17 +140,23 @@ function loadDay(index) {
 
     fetch(filePath)
         .then(res => {
-            if (!res.ok) throw new Error("File GeoJSON tidak ditemukan");
+            if (!res.ok) throw new Error(`File ${productConfig.prefix}${index}${productConfig.extension} tidak ditemukan`);
             return res.json();
         })
         .then(geojsonData => {
             if (geojsonData.features && geojsonData.features.length > 0) {
                 let firstProps = geojsonData.features[0].properties;
-                if (firstProps.date && dateTextEl && typeof Utils !== 'undefined') {
-                    dateTextEl.innerText = `Valid: ${Utils.formatTanggal(firstProps.date)}`;
+                let polyDate = firstProps.date || firstProps.tanggal || firstProps.validity || firstProps.valid_date;
+
+                if (polyDate && dateTextEl && typeof Utils !== 'undefined') {
+                    dateTextEl.innerText = `Valid: ${Utils.formatTanggal(polyDate)}`;
+                } else if (window.validDates && window.validDates[index] && dateTextEl) {
+                    dateTextEl.innerText = `Valid: ${window.validDates[index]}`;
                 } else if (dateTextEl) {
                     dateTextEl.innerText = `Valid: Prediksi Hari ke-${index + 1}`;
                 }
+            } else {
+                if (dateTextEl) dateTextEl.innerText = `Valid: Hari ke-${index + 1} (Data Kosong)`;
             }
 
             activeOverlayLayer = L.geoJSON(geojsonData, {
@@ -162,17 +190,15 @@ function loadDay(index) {
                 }
             }).addTo(map);
 
-            // PENYESUAIAN HIERARKI LAYER (PEMBAHARUAN V1.2)
+            // Layer maritim ditaruh di paling belakang (di bawah daratan)
             if (currentProductKey.includes('snorkling') || currentProductKey.includes('diving')) {
-                // Produk maritim: ditaruh paling bawah di bawah daratan
                 activeOverlayLayer.bringToBack();
             }
             
-            // PAKSA GARIS BATAS ADMINISTRASI KEMBALI KE PALING ATAS
             keepAdminBoundariesOnTop();
 
             // Update status tombol aktif di UI
-            let totalDays = productConfig.days || 3;
+            let totalDays = productConfig.days || 7;
             for (let i = 0; i < totalDays; i++) {
                 let btn = document.getElementById('day-btn-' + i);
                 if (btn) {
@@ -183,8 +209,25 @@ function loadDay(index) {
             if (typeof hideLoader === 'function') hideLoader();
         })
         .catch(err => {
-            console.warn("Gagal memuat GeoJSON:", err);
-            if (dateTextEl) dateTextEl.innerText = "⚠️ Data Hari Ini Belum Tersedia";
+            console.warn("Peringatan pemuatan GeoJSON:", err.message);
+            
+            if (dateTextEl) {
+                if (window.validDates && window.validDates[index]) {
+                    dateTextEl.innerText = `Valid: ${window.validDates[index]} (Data Belum Tersedia)`;
+                } else {
+                    dateTextEl.innerText = `⚠️ Data Hari ke-${index + 1} Belum Tersedia`;
+                }
+            }
+
+            // Tetap tandai tombol aktif di UI
+            let totalDays = productConfig.days || 7;
+            for (let i = 0; i < totalDays; i++) {
+                let btn = document.getElementById('day-btn-' + i);
+                if (btn) {
+                    btn.classList.toggle('active', i === index);
+                }
+            }
+
             if (typeof hideLoader === 'function') hideLoader();
         });
 }

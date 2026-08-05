@@ -1,5 +1,5 @@
 // ==========================================
-// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.3 (FULL REVISED)
+// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.4 (FIXED POP-UP & BOUNDARIES)
 // ==========================================
 
 // Variabel Global Instance Peta
@@ -15,7 +15,7 @@ let kabupatenLayer = null;
 function initMap() {
     if (map !== null) return map;
 
-    // Inisialisasi Peta (Matikan zoomControl default agar bisa dipindah ke kanan bawah)
+    // Inisialisasi Peta (Zoom control dipindah ke kanan bawah)
     map = L.map('map', {
         center: CONFIG.map.defaultCenter || [-1.75, 125.25],
         zoom: CONFIG.map.defaultZoom || 5,
@@ -37,12 +37,11 @@ function initMap() {
 
 /**
  * Memuat batas administrasi (Provinsi & Kabupaten) dari folder data/admin/
- * Bertindak sebagai Base Interactive Layer untuk area non-hazard (Aman/Normal)
  */
 function loadAdminBoundaries() {
     if (!map) return;
 
-    // 1. Muat Batas Kabupaten / Kota (Interactive Base Layer)
+    // 1. Muat Batas Kabupaten / Kota
     if (CONFIG.paths && CONFIG.paths.adminKabupaten) {
         fetch(CONFIG.paths.adminKabupaten)
             .then(res => {
@@ -55,7 +54,7 @@ function loadAdminBoundaries() {
                         color: "rgba(100, 116, 139, 0.4)",        // Garis hitam murni v1.0
                         weight: 0.8,             // Ketebalan garis 0.8px
                         fillColor: "#ffffff",
-                        fillOpacity: 0.001       // Sangat transparan untuk penangkapan klik kursor
+                        fillOpacity: 0.001       // Sangat transparan untuk penangkapan kursor
                     },
                     onEachFeature: function (feature, layer) {
                         let props = feature.properties || {};
@@ -68,44 +67,51 @@ function loadAdminBoundaries() {
                             });
                         }
 
-                        // Penanganan Klik Pintar (Smart Propagation)
+                        // Event Klik Pintar
                         layer.on('click', function (e) {
-                            let hasHazardUnderneath = false;
+                            let hazardClicked = false;
 
-                            // Cek apakah ada layer hazard/risiko yang aktif tepat di bawah koordinat klik
-                            if (typeof activeOverlayLayer !== 'undefined' && activeOverlayLayer) {
+                            // 1. Jika ada layer Hazard yang aktif, cari fitur hazard yang berada di bawah kursor
+                            if (typeof activeOverlayLayer !== 'undefined' && activeOverlayLayer && map.hasLayer(activeOverlayLayer)) {
                                 if (typeof activeOverlayLayer.eachLayer === 'function') {
                                     activeOverlayLayer.eachLayer(function (hazardSubLayer) {
-                                        if (hazardSubLayer.getBounds && hazardSubLayer.getBounds().contains(e.latlng)) {
-                                            hasHazardUnderneath = true;
+                                        // Pengecekan presisi titik di dalam poligon / marker hazard
+                                        if (hazardSubLayer.feature && hazardSubLayer.options && hazardSubLayer.options.interactive !== false) {
+                                            // Panggil penanganan klik hazard jika pengguna mengeklik poligon hazard
+                                            if (typeof bindFeaturePopup === 'function' && !hazardClicked) {
+                                                let productConfig = CONFIG.products[currentCategory][currentProductKey];
+                                                
+                                                // Cek apakah koordinat klik berada dalam fitur hazard via Leaflet Pip / Bounds
+                                                if (hazardSubLayer.getBounds && hazardSubLayer.getBounds().contains(e.latlng)) {
+                                                    L.DomEvent.stopPropagation(e);
+                                                    bindFeaturePopup(hazardSubLayer.feature, hazardSubLayer, productConfig, e);
+                                                    hazardClicked = true;
+                                                }
+                                            }
                                         }
                                     });
                                 }
                             }
 
-                            // Jika ada poligon hazard di bawah kursor, serahkan event klik ke layer hazard
-                            if (hasHazardUnderneath) {
-                                return;
-                            }
-
-                            // Jika berada di zona aman/luar hazard, tampilkan pop-up wilayah normal
-                            L.DomEvent.stopPropagation(e);
-                            if (typeof generateGlobalPopup === 'function') {
-                                generateGlobalPopup(e, feature);
-                            } else if (typeof window.handleMapClick === 'function') {
-                                window.handleMapClick(e, feature);
+                            // 2. Jika tidak ada hazard di lokasi tersebut, panggil popup area aman (kabupaten)
+                            if (!hazardClicked) {
+                                L.DomEvent.stopPropagation(e);
+                                if (typeof generateGlobalPopup === 'function') {
+                                    generateGlobalPopup(e, feature);
+                                } else if (typeof window.handleMapClick === 'function') {
+                                    window.handleMapClick(e, feature);
+                                }
                             }
                         });
                     }
                 }).addTo(map);
 
-                // Paksa batas kabupaten selalu berada di atas layer hazard
                 if (kabupatenLayer) kabupatenLayer.bringToFront();
             })
             .catch(err => console.warn("Peringatan Admin Kabupaten:", err.message));
     }
 
-    // 2. Muat Batas Provinsi (Overlay Lines Only)
+    // 2. Muat Batas Provinsi
     if (CONFIG.paths && CONFIG.paths.adminProvinsi) {
         fetch(CONFIG.paths.adminProvinsi)
             .then(res => {
@@ -116,14 +122,13 @@ function loadAdminBoundaries() {
                 provinsiLayer = L.geoJSON(data, {
                     style: {
                         color: "#0284c7",        // Garis hitam murni v1.0
-                        weight: 2.0,             // Ketebalan garis 2.0px (lebih tebal)
+                        weight: 2.0,             // Ketebalan garis 2.0px
                         fillColor: "transparent",
                         fillOpacity: 0,
-                        interactive: false       // Mencegah pemblokiran klik ke layer bawahnya
+                        interactive: false       // Klik tidak akan terhalang oleh garis provinsi
                     }
                 }).addTo(map);
 
-                // Paksa batas provinsi selalu berada di paling depan
                 if (provinsiLayer) provinsiLayer.bringToFront();
             })
             .catch(err => console.warn("Peringatan Admin Provinsi:", err.message));

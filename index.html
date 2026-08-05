@@ -15,21 +15,24 @@
     <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
-    <!-- Header Utama -->
+    <!-- Kontainer Peta Utama (Wajib Paling Belakang) -->
+    <div id="map"></div>
+
+    <!-- 1. Header Utama (Terkunci di Tengah Atas Secara Mandiri) -->
     <div class="map-header">
         <h3 id="systemSubtitle">Memuat sistem...</h3>
         <h1 id="hazardTitle">Prediksi Risiko Dampak Wilayah BBMKG IV</h1>
         <p id="validDateText">Valid: Memuat data...</p>
     </div>
 
-    <!-- Logo di Ujung Kanan Atas -->
+    <!-- 2. Logo di Ujung Kanan Atas -->
     <div class="logo-container">
         <img src="assets/logo.jpeg" alt="Logo BMKG" class="logo-instansi" onerror="this.style.display='none'">
     </div>
 
-    <!-- Kontrol Kanan Atas (Map Settings, Potensi Bahaya, Dampak Risiko & Fullscreen) -->
-    <div class="top-right-controls">
-        <!-- 1. Map Settings Dropdown -->
+    <!-- 3. Kontrol Kiri Atas (Menu Dropdown Berjejer Vertikal Ke Bawah) -->
+    <div class="top-left-controls">
+        <!-- Map Settings Dropdown -->
         <div class="dropdown-wrapper" id="mapSettingsDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('mapSettingsDropdown')">🗺️ Map Settings ▾</button>
             <div class="dropdown-content">
@@ -42,7 +45,7 @@
             </div>
         </div>
 
-        <!-- 2. Potensi Bahaya (Hazard) -->
+        <!-- Potensi Bahaya (Hazard) -->
         <div class="dropdown-wrapper" id="hazardDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('hazardDropdown')">⚡ Potensi Bahaya ▾</button>
             <div class="dropdown-content">
@@ -55,7 +58,7 @@
             </div>
         </div>
 
-        <!-- 3. Dampak Risiko -->
+        <!-- Dampak Risiko -->
         <div class="dropdown-wrapper" id="risikoDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('risikoDropdown')">⚠️ Dampak Risiko ▾</button>
             <div class="dropdown-content">
@@ -66,16 +69,15 @@
             </div>
         </div>
 
-        <!-- 4. Tombol Fullscreen -->
-        <button class="dropdown-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+        <!-- Tombol Fullscreen -->
+        <div class="dropdown-wrapper">
+            <button class="dropdown-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+        </div>
     </div>
 
-    <!-- Kontainer Peta Utama -->
-    <div id="map"></div>
-
-    <!-- Kotak Kontrol Kiri Bawah (Menyatu: Navigasi Waktu + Transparansi + Legenda + Watermark) -->
+    <!-- 4. Kotak Kontrol Kiri Bawah (Navigasi Waktu + Transparansi + Legenda + Watermark) -->
     <div class="control-box left-bottom-panel">
-        <!-- 1. Navigasi Waktu Prediksi -->
+        <!-- Navigasi Waktu Prediksi -->
         <h4>Navigasi Waktu Prediksi</h4>
         <div class="time-controls">
             <div class="button-group" id="dayButtonsContainer"></div>
@@ -88,7 +90,7 @@
 
         <hr class="panel-divider">
 
-        <!-- 2. Slider Transparansi Peta -->
+        <!-- Slider Transparansi Peta -->
         <div class="opacity-control">
             <label for="opacityRange">
                 Transparansi Peta: <span id="opacityVal">65%</span>
@@ -98,11 +100,11 @@
 
         <hr class="panel-divider">
 
-        <!-- 3. Legenda Peringatan (Menyatu tanpa hide button) -->
+        <!-- Legenda Peringatan -->
         <h4>Legenda Peringatan</h4>
         <div id="legendBox" class="legend-container"></div>
 
-        <!-- 4. Watermark Pengembang -->
+        <!-- Watermark Pengembang -->
         <div class="dev-watermark">Pengembang: Bagus Primohadi - BBMKG IV</div>
     </div>
 
@@ -114,31 +116,20 @@
     <!-- ==========================================
          MODUL JAVASCRIPT V1.1 (PURE GEOJSON WEBGIS)
          ========================================== -->
-    <!-- 1. Konfigurasi Terpusat & Helper Functions -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
-
-    <!-- 2. Core Peta & Basemap (map.js Wajib Sebelum basemap.js) -->
     <script src="js/map.js"></script>
     <script src="js/basemap.js"></script>
-
-    <!-- 3. Popup & Legenda -->
     <script src="js/popup.js"></script>
     <script src="js/legend.js"></script>
-
-    <!-- 4. Pemuat Overlay GeoJSON & Playback Waktu -->
     <script src="js/overlay.js"></script>
     <script src="js/playback.js"></script>
-
-    <!-- 5. Kontrol UI & Utilitas Tambahan -->
     <script src="js/opacity.js"></script>
     <script src="js/fullscreen.js"></script>
     <script src="js/hover.js"></script>
     <script src="js/search.js"></script>
     <script src="js/urlstate.js"></script>
     <script src="js/export.js"></script>
-
-    <!-- 6. Inisialisator Utama (Wajib Paling Bawah) -->
     <script src="js/app.js"></script>
 </body>
 </html>

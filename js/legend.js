@@ -1,5 +1,7 @@
 // ==========================================
-// LEGEND.JS - PENGATUR KOTAK LEGENDA DINAMIS & COLLAPSIBLE V1.2
+// LEGEND.JS - PENGATUR KOTAK LEGENDA DINAMIS & COLLAPSIBLE V1.3
+// - Support Dynamic Time-Range Tagging (H-1 to H+5 vs H0 to H+6)
+// - Seamless Collapsible Integration & Transparent Filtering
 // ==========================================
 
 /**
@@ -19,6 +21,22 @@ function renderLegend(productConfig) {
         legendBox.innerHTML = "<div style='font-size:11px; color:#94a3b8;'>Legenda tidak tersedia.</div>";
         return;
     }
+
+    // Cek apakah produk aktif termasuk dalam 4 parameter khusus (Banjir & Longsor)
+    let prodKey = typeof currentProductKey !== 'undefined' ? currentProductKey : '';
+    let isOffsetProduct = ['banjir', 'longsor', 'risiko_banjir', 'risiko_longsor'].includes(prodKey);
+    let timeRangeText = isOffsetProduct ? "(H-1 s/d H+5)" : "(H0 s/d H+6)";
+
+    // Buat elemen Header Legenda dengan Indikator Rentang Waktu
+    let headerDiv = document.createElement('div');
+    headerDiv.className = 'legend-header-info';
+    headerDiv.style.cssText = 'font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;';
+    
+    headerDiv.innerHTML = `
+        <span>Kategori: ${productConfig.name || 'Produk'}</span>
+        <span style="color: #3b82f6; font-size: 10px; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">${timeRangeText}</span>
+    `;
+    legendBox.appendChild(headerDiv);
 
     // Susun item legenda berdasarkan array warna dan label
     legendData.forEach(item => {

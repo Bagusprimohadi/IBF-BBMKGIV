@@ -124,12 +124,3 @@ body, html {
     } 
 }
 
-/* Mencegah garis batas administrasi menyerap/mengacaukan klik kursor */
-.leaflet-pane .leaflet-interactive {
-    pointer-events: auto;
-}
-
-/* Pastikan layer kabupaten hanya berfungsi visual sebagai garis batas */
-path.leaflet-interactive[stroke="#000000"][fill="transparent"] {
-    pointer-events: none !important;
-}

@@ -8,14 +8,14 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Modular CSS (Futuristik Command Theme V1.2) -->
+    <!-- Modular CSS (Clean Light Theme V1.1) -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/controls.css">
     <link rel="stylesheet" href="css/legend.css">
     <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
-    <!-- Header Utama dengan Struktur Judul Standar Instansi -->
+    <!-- Header Utama -->
     <div class="map-header">
         <h3 id="systemSubtitle">Memuat sistem...</h3>
         <h1 id="hazardTitle">Prediksi Risiko Dampak Wilayah BBMKG IV</h1>
@@ -27,7 +27,7 @@
         <img src="assets/logo.jpeg" alt="Logo BMKG" class="logo-instansi" onerror="this.style.display='none'">
     </div>
 
-    <!-- Kontrol Kanan Atas (Map Settings, Dropdown Bahaya & Risiko, serta Fullscreen) -->
+    <!-- Kontrol Kanan Atas (Map Settings, Potensi Bahaya, Dampak Risiko & Fullscreen) -->
     <div class="top-right-controls">
         <!-- 1. Map Settings Dropdown -->
         <div class="dropdown-wrapper" id="mapSettingsDropdown">
@@ -42,7 +42,7 @@
             </div>
         </div>
 
-        <!-- 2. Tombol Dropdown Terpisah: Potensi Bahaya (Hazard) -->
+        <!-- 2. Potensi Bahaya (Hazard) -->
         <div class="dropdown-wrapper" id="hazardDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('hazardDropdown')">⚡ Potensi Bahaya ▾</button>
             <div class="dropdown-content">
@@ -55,7 +55,7 @@
             </div>
         </div>
 
-        <!-- 3. Tombol Dropdown Terpisah: Dampak Risiko -->
+        <!-- 3. Dampak Risiko -->
         <div class="dropdown-wrapper" id="risikoDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('risikoDropdown')">⚠️ Dampak Risiko ▾</button>
             <div class="dropdown-content">
@@ -73,8 +73,9 @@
     <!-- Kontainer Peta Utama -->
     <div id="map"></div>
 
-    <!-- Kotak Kontrol Kiri Bawah (Navigasi Waktu & Opacity Slider) -->
-    <div class="control-box">
+    <!-- Kotak Kontrol Kiri Bawah (Menyatu: Navigasi Waktu + Transparansi + Legenda + Watermark) -->
+    <div class="control-box left-bottom-panel">
+        <!-- 1. Navigasi Waktu Prediksi -->
         <h4>Navigasi Waktu Prediksi</h4>
         <div class="time-controls">
             <div class="button-group" id="dayButtonsContainer"></div>
@@ -85,31 +86,25 @@
             </div>
         </div>
 
-        <!-- Slider Transparansi Overlay Layer GeoJSON -->
+        <hr class="panel-divider">
+
+        <!-- 2. Slider Transparansi Peta -->
         <div class="opacity-control">
             <label for="opacityRange">
                 Transparansi Peta: <span id="opacityVal">65%</span>
             </label>
-            <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.65" style="width: 100%; cursor: pointer;" oninput="updateOpacity(this.value)">
+            <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.65" oninput="updateOpacity(this.value)">
         </div>
-    </div>
 
-    <!-- Wrapper Legenda Kanan Bawah dengan Fitur Collapsible Slide Hide/Show -->
-    <div id="legendPanelWrapper" class="legend-wrapper">
-        <!-- Tombol Penanda Buka/Tutup Legenda yang Tetap Terlihat di Layar -->
-        <button id="legendToggleBtn" class="legend-toggle-btn" title="Sembunyikan Legenda">
-            🎨 Legenda ◄
-        </button>
-        
-        <!-- Kotak Legenda Utama -->
-        <div class="control-box" style="position: relative; bottom: 0; left: 0; width: 260px;">
-            <h4>Legenda Peringatan</h4>
-            <div id="legendBox" class="legend-container"></div>
-        </div>
-    </div>
+        <hr class="panel-divider">
 
-    <!-- Watermark Pengembang -->
-    <div class="dev-watermark">Pengembang Bagus Primohadi - BBMKG IV</div>
+        <!-- 3. Legenda Peringatan (Menyatu tanpa hide button) -->
+        <h4>Legenda Peringatan</h4>
+        <div id="legendBox" class="legend-container"></div>
+
+        <!-- 4. Watermark Pengembang -->
+        <div class="dev-watermark">Pengembang: Bagus Primohadi - BBMKG IV</div>
+    </div>
 
     <!-- ==========================================
          LEAFLET JS (CORE LIBRARY)
@@ -117,18 +112,17 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- ==========================================
-         MODUL JAVASCRIPT V1.2 (PURE GEOJSON WEBGIS)
-         Diurutkan Berdasarkan Dependensi Eksekusi
+         MODUL JAVASCRIPT V1.1 (PURE GEOJSON WEBGIS)
          ========================================== -->
     <!-- 1. Konfigurasi Terpusat & Helper Functions -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
 
-    <!-- 2. Core Peta & Basemap -->
-    <script src="js/basemap.js"></script>
+    <!-- 2. Core Peta & Basemap (map.js Wajib Sebelum basemap.js) -->
     <script src="js/map.js"></script>
+    <script src="js/basemap.js"></script>
 
-    <!-- 3. Popup & Legenda (Wajib dimuat sebelum overlay.js) -->
+    <!-- 3. Popup & Legenda -->
     <script src="js/popup.js"></script>
     <script src="js/legend.js"></script>
 

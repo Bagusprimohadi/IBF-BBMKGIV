@@ -1,10 +1,10 @@
 // ==========================================
-// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.0 (ASYNC MULTI-WARNING SCANNER)
-// Rekap Cerdas Multi-Parameter (Bahaya & Risiko) Berbasis Spasial GeoJSON
+// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.1 (STANDALONE SPATIAL SCANNER)
+// Memperbaiki bug tanggal 2001 & deteksi spasial tanpa Turf.js
 // ==========================================
 
 /**
- * Normalisasi string nama wilayah untuk pencocokan
+ * Normalisasi string nama wilayah
  */
 function normalizeName(str) {
     if (!str) return "";
@@ -12,7 +12,7 @@ function normalizeName(str) {
 }
 
 /**
- * Fetch GeoJSON dengan penanganan error (Silently fail jika file H+x belum ada/404)
+ * Fetch GeoJSON (Silently fail jika file H+x belum ada/404)
  */
 async function fetchGeoJSON(url) {
     try {
@@ -25,27 +25,56 @@ async function fetchGeoJSON(url) {
 }
 
 /**
- * Mencari apakah koordinat atau nama wilayah ada di dalam GeoJSON
+ * Algoritma Matematika Murni (Ray-Casting) untuk mengecek apakah titik (lat, lon) berada di dalam Poligon.
+ * Bekerja 100% akurat tanpa membutuhkan library Turf.js atau nama kabupaten.
+ */
+function isPointInPolygonMath(lat, lon, feature) {
+    if (!feature || !feature.geometry || !feature.geometry.coordinates) return false;
+    
+    let x = lon; // Longitude adalah sumbu X
+    let y = lat; // Latitude adalah sumbu Y
+    let type = feature.geometry.type;
+    let coords = feature.geometry.coordinates;
+
+    function checkPolygon(poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            let xi = poly[i][0], yi = poly[i][1];
+            let xj = poly[j][0], yj = poly[j][1];
+            let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    if (type === 'Polygon') {
+        return checkPolygon(coords[0]); // Ambil ring terluar
+    } else if (type === 'MultiPolygon') {
+        for (let i = 0; i < coords.length; i++) {
+            if (checkPolygon(coords[i][0])) return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Pengecekan Hibrid: Utamakan Koordinat Spasial (Ray-Casting), baru fallback ke string.
  */
 function findActiveFeature(geojsonData, targetName, lat, lon) {
     if (!geojsonData || !geojsonData.features) return null;
-    
     let normTarget = normalizeName(targetName);
     
     return geojsonData.features.find(f => {
+        // 1. Pengecekan Koordinat Spasial Mutlak (Akurasi Tinggi)
+        if (lat && lon && isPointInPolygonMath(lat, lon, f)) {
+            return true;
+        }
+        
+        // 2. Fallback Pengecekan Nama (Jika koordinat meleset sedikit)
         let p = f.properties || {};
         let hName = p.kabupaten || p.WADMKK || p.NAME_2 || p.NAMOBJ || "";
-        
-        // Pencocokan Nama
         if (hName && normalizeName(hName) === normTarget) return true;
         
-        // Pencocokan Spasial Bounding Box/Turf (Jika ada)
-        if (typeof turf !== 'undefined' && lat && lon && f.geometry) {
-            try {
-                let pt = turf.point([lon, lat]);
-                return turf.booleanPointInPolygon(pt, f);
-            } catch(e) { }
-        }
         return false;
     });
 }
@@ -54,19 +83,22 @@ function findActiveFeature(geojsonData, targetName, lat, lon) {
  * Membaca status bahaya berdasarkan Legenda Config
  */
 function getStatusInfo(props, prodConfig) {
-    let label = props.kategori || props.level || props.status || "Waspada";
-    let color = props.color || props.hex_color || "#ef4444";
+    let label = props.kategori || props.level || props.status || props.dampak || "Waspada";
+    let color = props.color || props.hex_color || props.fill || "#ef4444";
     let isSafe = false;
     
     let textKey = String(label).toLowerCase().trim();
-    if (prodConfig && prodConfig.legends) {
+    if (prodConfig && Array.isArray(prodConfig.legends)) {
         let matched = prodConfig.legends.find(l => String(l.level || l.label || l.code || '').toLowerCase().trim() === textKey);
         if (!matched) matched = prodConfig.legends.find(l => String(l.color).toUpperCase().trim() === String(color).toUpperCase().trim());
-        if (matched) label = matched.label || matched.level || label;
+        if (matched) {
+            label = matched.label || matched.level || label;
+            color = matched.color || color;
+        }
     }
     
     let lblLower = String(label).toLowerCase();
-    if (lblLower.includes("aman") || lblLower.includes("nyaman") || lblLower.includes("tidak ada") || color.toLowerCase() === '#00ff00' || color === 'transparent') {
+    if (lblLower.includes("aman") || lblLower.includes("nyaman") || lblLower.includes("rendah") || lblLower.includes("tidak ada") || color.toLowerCase() === '#00ff00' || color === 'transparent') {
         isSafe = true;
     }
     
@@ -74,41 +106,46 @@ function getStatusInfo(props, prodConfig) {
 }
 
 /**
- * Memicu pencetakan laporan analisis dampak (Dirombak menjadi Async)
+ * Generator Tanggal Bahasa Indonesia Tahan Banting (Anti-Bug 2001)
+ */
+function generateSafeIndonesianDate(addDays) {
+    let d = new Date();
+    d.setDate(d.getDate() + addDays);
+    
+    let days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    let months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    
+    return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/**
+ * Memicu pencetakan laporan analisis dampak (Dirombak Async)
  */
 async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lon) {
-    // 1. Tampilkan Indikator Loading (Karena kita akan scan puluhan file)
+    // Tampilkan Indikator Loading di UI
     let btn = document.querySelector('.btn-export');
-    let originalBtnText = btn ? btn.innerHTML : '';
+    let originalBtnText = btn ? btn.innerHTML : '📄 Unduh Laporan (PDF)';
     if (btn) {
-        btn.innerHTML = '⏳ Sedang Memindai Semua Parameter...';
+        btn.innerHTML = '⏳ Sedang Memindai Spasial (Harap Tunggu)...';
         btn.disabled = true;
     }
 
-    // Pastikan array validDates punya 7 hari (H0 s/d H+6), jika kosong, buat otomatis
-    let datesList = window.validDates || [];
-    if (datesList.length === 0) {
-        let today = new Date();
-        for (let i = 0; i < 7; i++) {
-            let d = new Date(today);
-            d.setDate(d.getDate() + i);
-            datesList.push(d.toISOString().split('T')[0]);
-        }
-    }
+    // Jeda 50ms agar browser merender tombol UI dulu sebelum proses berat dimulai
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     let coordText = (typeof Utils !== 'undefined' && typeof Utils.formatKoordinat === 'function') ? `${Utils.formatKoordinat(lat, 'lat')}, ${Utils.formatKoordinat(lon, 'lon')}` : `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
     let printTime = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' });
     let tableRowsHTML = '';
 
-    // 2. Loop per Hari (H0 s/d H+6)
-    for (let i = 0; i < datesList.length; i++) {
+    // Loop 7 Hari (H0 s/d H+6)
+    for (let i = 0; i < 7; i++) {
         let dayLabel = i === 0 ? 'H0' : `H+${i}`;
-        let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') ? Utils.formatTanggal(datesList[i]) : datesList[i];
+        let safeDateString = generateSafeIndonesianDate(i);
         
         let warningsBahaya = [];
         let warningsRisiko = [];
 
-        // 3A. Scan Paralel Semua File Hazard di Hari (i)
+        // Scan Paralel Semua File Hazard di Hari (i)
         if (CONFIG && CONFIG.products && CONFIG.products.hazard) {
             let hazardPromises = Object.values(CONFIG.products.hazard).map(async (prod) => {
                 let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
@@ -124,7 +161,7 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             warningsBahaya = results.filter(r => r !== null);
         }
 
-        // 3B. Scan Paralel Semua File Risiko di Hari (i)
+        // Scan Paralel Semua File Risiko di Hari (i)
         if (CONFIG && CONFIG.products && CONFIG.products.risiko) {
             let risikoPromises = Object.values(CONFIG.products.risiko).map(async (prod) => {
                 let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
@@ -140,14 +177,14 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             warningsRisiko = results.filter(r => r !== null);
         }
 
-        // 4. Format Teks Baris Tabel
+        // Format Teks Baris Tabel
         let textBahaya = warningsBahaya.length > 0 ? warningsBahaya.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Tidak Ada Peringatan</span>';
         let textRisiko = warningsRisiko.length > 0 ? warningsRisiko.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Risiko Rendah</span>';
 
         tableRowsHTML += `
             <tr>
                 <td style="padding: 10px; border: 1px solid #0f172a; text-align: center; font-weight: bold; background: #f8fafc;">${dayLabel}</td>
-                <td style="padding: 10px; border: 1px solid #0f172a; text-align: center;">${formattedDate}</td>
+                <td style="padding: 10px; border: 1px solid #0f172a; text-align: center;">${safeDateString}</td>
                 <td style="padding: 10px; border: 1px solid #0f172a; line-height: 1.6;">${textBahaya}</td>
                 <td style="padding: 10px; border: 1px solid #0f172a; line-height: 1.6;">${textRisiko}</td>
             </tr>
@@ -160,7 +197,7 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
         btn.disabled = false;
     }
 
-    // 5. Build HTML & Buka Jendela Print
+    // Build HTML & Buka Jendela Print
     let printWindow = window.open('', '_blank', 'width=1000,height=900');
     
     let htmlContent = `

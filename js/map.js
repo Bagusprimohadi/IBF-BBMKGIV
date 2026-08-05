@@ -1,5 +1,5 @@
 // ==========================================
-// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.7 (ADMIN BOUNDARIES ALWAYS VISIBLE)
+// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.8 (DUAL CUSTOM PANES)
 // ==========================================
 
 // Variabel Global Instance Peta
@@ -24,18 +24,24 @@ function initMap() {
         zoomControl: false 
     });
 
-    // 1. BUAT CUSTOM PANE KHUSUS UNTUK GARIS ADMINISTRASI (Paling Atas)
-    // Z-Index 650 menempatkannya jauh di atas layer hazard (z-index 400) & tile layer
-    map.createPane('adminBoundariesPane');
-    map.getPane('adminBoundariesPane').style.zIndex = 650;
-    map.getPane('adminBoundariesPane').style.pointerEvents = 'none'; // Klik tembus 100% ke hazard di bawah
+    // 1. BUAT DUA PANE TERPISAH (Z-Index di atas 400 milik layer Hazard)
+    
+    // Pane khusus Kabupaten (Di atas hazard)
+    map.createPane('paneKabupaten');
+    map.getPane('paneKabupaten').style.zIndex = 601;
+    map.getPane('paneKabupaten').style.pointerEvents = 'none'; // Kunci agar klik tembus hazard
+
+    // Pane khusus Provinsi (Paling atas)
+    map.createPane('paneProvinsi');
+    map.getPane('paneProvinsi').style.zIndex = 602;
+    map.getPane('paneProvinsi').style.pointerEvents = 'none'; // Kunci agar klik tembus hazard
 
     // Tombol Zoom di Sudut Kanan Bawah
     L.control.zoom({
         position: 'bottomright'
     }).addTo(map);
 
-    // Event Klik Global pada Peta (Terpicu jika mengklik area KOSONG / NON-HAZARD)
+    // Event Klik Global pada Peta (Terpicu jika mengklik area kosong)
     map.on('click', function (e) {
         if (typeof generateGlobalPopup === 'function') {
             generateGlobalPopup(e, null);
@@ -51,12 +57,12 @@ function initMap() {
 }
 
 /**
- * Memuat batas administrasi (Provinsi & Kabupaten)
+ * Memuat batas administrasi (Provinsi & Kabupaten) secara terpisah
  */
 function loadAdminBoundaries() {
     if (!map) return;
 
-    // 1. Muat Batas Kabupaten / Kota
+    // 1. Muat Batas Kabupaten / Kota (Masuk ke paneKabupaten)
     if (CONFIG.paths && CONFIG.paths.adminKabupaten) {
         fetch(CONFIG.paths.adminKabupaten)
             .then(res => {
@@ -65,12 +71,12 @@ function loadAdminBoundaries() {
             })
             .then(data => {
                 kabupatenLayer = L.geoJSON(data, {
-                    pane: 'adminBoundariesPane', // Render di Pane khusus z-index 650
+                    pane: 'paneKabupaten',   // Gunakan custom pane 601
                     style: {
-                        color: "rgba(100, 116, 139, 0.4)",        // Warna garis hitam murni
-                        weight: 1.2,             // Dinaikkan ke 1.2px agar terlihat lebih kontras & jelas
-                        opacity: 0.85,           // Opasitas garis 85%
-                        fill: false,             // Matikan fill total
+                        color: "rgba(100, 116, 139, 0.4)",        // Hitam sedikit keabu-abuan agar kontras
+                        weight: 1.5,             // Dipertebal menjadi 1.5px agar menembus warna solid hazard
+                        opacity: 1,              // Opasitas garis penuh 100%
+                        fill: false,             // Matikan fill sama sekali
                         fillOpacity: 0
                     },
                     onEachFeature: function (feature, layer) {
@@ -89,7 +95,7 @@ function loadAdminBoundaries() {
             .catch(err => console.warn("Peringatan Admin Kabupaten:", err.message));
     }
 
-    // 2. Muat Batas Provinsi
+    // 2. Muat Batas Provinsi (Masuk ke paneProvinsi)
     if (CONFIG.paths && CONFIG.paths.adminProvinsi) {
         fetch(CONFIG.paths.adminProvinsi)
             .then(res => {
@@ -98,12 +104,12 @@ function loadAdminBoundaries() {
             })
             .then(data => {
                 provinsiLayer = L.geoJSON(data, {
-                    pane: 'adminBoundariesPane', // Render di Pane khusus z-index 650
+                    pane: 'paneProvinsi',    // Gunakan custom pane 602
                     style: {
-                        color: "#0284c7",        // Warna garis hitam murni
-                        weight: 2.2,             // Garis provinsi lebih tebal (2.2px)
-                        opacity: 1.0,            // Opasitas 100%
-                        fill: false,             // Matikan fill total
+                        color: "#0284c7",        // Hitam murni
+                        weight: 2.5,             // Lebih tebal untuk provinsi
+                        opacity: 1,
+                        fill: false,
                         fillOpacity: 0
                     }
                 }).addTo(map);

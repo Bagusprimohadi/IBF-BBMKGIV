@@ -1,6 +1,7 @@
 // ==========================================
-// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.4 (POLYGON-DIRECT DATE & FULL IMAGE LETTERHEAD)
+// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.5 (UNIVERSAL SCANNER & FULL IMAGE LETTERHEAD)
 // - Kop Surat Full Image (KOPSURAT.png)
+// - Universal Scanner (Menyapu seluruh kategori hazard, risiko, & oseano tanpa terkecuali)
 // - Ekstraksi Tanggal Langsung dari Fitur Poligon GeoJSON / Window ValidDates
 // - Color-First Matching & Severity Sort untuk overlap polygon
 // ==========================================
@@ -144,44 +145,52 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
         let warningsRisiko = [];
         let rawDateFromPolygon = null; // Menampung tanggal asli dari atribut poligon GeoJSON
 
-        // 1. Scan Paralel Semua File Hazard di Hari (i)
-        if (CONFIG && CONFIG.products && CONFIG.products.hazard) {
-            let hazardPromises = Object.values(CONFIG.products.hazard).map(async (prod) => {
-                let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
-                let geojson = await fetchGeoJSON(url);
-                let feat = findActiveFeature(geojson, lat, lon, prod);
-                if (feat) {
-                    // Mencegat tanggal asli dari properti poligon
-                    if (!rawDateFromPolygon && feat.properties) {
-                        rawDateFromPolygon = feat.properties.date || feat.properties.tanggal || feat.properties.validity || feat.properties.valid_date;
+        // Fungsi Universal untuk Menscan Seluruh Kategori Produk di CONFIG.products (Bahaya & Risiko/Oseano)
+        async function scanAllConfigCategories(targetGroup) {
+            let collected = [];
+            if (!CONFIG || !CONFIG.products) return collected;
+
+            for (let catKey of Object.keys(CONFIG.products)) {
+                let categoryObj = CONFIG.products[catKey];
+                if (!categoryObj) continue;
+
+                for (let prodKey of Object.keys(categoryObj)) {
+                    let prod = categoryObj[prodKey];
+                    if (!prod || !prod.folder || !prod.prefix) continue;
+
+                    // Klasifikasi apakah produk ini termasuk kategori risiko/dampak atau bahaya murni
+                    let isRisikoItem = prodKey.toLowerCase().includes('risiko') || catKey.toLowerCase().includes('risiko') || prodKey.toLowerCase().includes('impact');
+                    
+                    if (targetGroup === 'bahaya' && isRisikoItem) continue;
+                    if (targetGroup === 'risiko' && !isRisikoItem) continue;
+
+                    let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
+                    let geojson = await fetchGeoJSON(url);
+                    if (!geojson) continue;
+
+                    let feat = findActiveFeature(geojson, lat, lon, prod);
+                    if (feat) {
+                        if (!rawDateFromPolygon && feat.properties) {
+                            rawDateFromPolygon = feat.properties.date || feat.properties.tanggal || feat.properties.validity || feat.properties.valid_date;
+                        }
+                        let stat = getStatusInfo(feat.properties, prod);
+                        if (!stat.isSafe) {
+                            let formattedWarning = `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
+                            if (!collected.includes(formattedWarning)) {
+                                collected.push(formattedWarning);
+                            }
+                        }
                     }
-                    let stat = getStatusInfo(feat.properties, prod);
-                    if (!stat.isSafe) return `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
                 }
-                return null;
-            });
-            let results = await Promise.all(hazardPromises);
-            warningsBahaya = results.filter(r => r !== null);
+            }
+            return collected;
         }
 
-        // 2. Scan Paralel Semua File Risiko di Hari (i)
-        if (CONFIG && CONFIG.products && CONFIG.products.risiko) {
-            let risikoPromises = Object.values(CONFIG.products.risiko).map(async (prod) => {
-                let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
-                let geojson = await fetchGeoJSON(url);
-                let feat = findActiveFeature(geojson, lat, lon, prod);
-                if (feat) {
-                    if (!rawDateFromPolygon && feat.properties) {
-                        rawDateFromPolygon = feat.properties.date || feat.properties.tanggal || feat.properties.validity || feat.properties.valid_date;
-                    }
-                    let stat = getStatusInfo(feat.properties, prod);
-                    if (!stat.isSafe) return `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
-                }
-                return null;
-            });
-            let results = await Promise.all(risikoPromises);
-            warningsRisiko = results.filter(r => r !== null);
-        }
+        // 1. Scan Semua Parameter Bahaya secara Universal
+        warningsBahaya = await scanAllConfigCategories('bahaya');
+
+        // 2. Scan Semua Parameter Risiko / Maritim / Oseanografi secara Universal
+        warningsRisiko = await scanAllConfigCategories('risiko');
 
         // 3. Penentuan Tanggal Validitas yang Akurat
         let displayDate = "-";
@@ -257,7 +266,7 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             <img src="assets/KOPSURAT.png" class="kop-surat-img" alt="Kop Surat BMKG" onerror="this.style.display='none'; alert('Gambar KOPSURAT.png tidak ditemukan di folder assets!');">
 
             <div class="doc-title">
-                <h3>LAPORAN KOMPREHENSIF POTENSI BAHAYA & RISIKO WILAYAH</h3>
+                <h3>LAPORAN PERINGATAN DINI POTENSI BAHAYA & RISIKO WILAYAH</h3>
             </div>
 
             <div class="meta-box">
@@ -283,7 +292,7 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             <div class="footer-sign">
                 <p>Makassar, ${printTime.split(',')[0]}<br>Tim Forecaster / Operasional BBMKG IV</p>
                 <div class="space"></div>
-                <p><b>( Pusat Pengendalian Operasional IBF )</b></p>
+                <p><b>( Forecaster IBF BBMKG IV )</b></p>
             </div>
 
             <script>

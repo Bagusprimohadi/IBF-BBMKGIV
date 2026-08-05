@@ -1,5 +1,5 @@
 // ==========================================
-// POPUP.JS - POINT IMPACT REPORT V1.8 (UNIFIED CONSISTENT LAYOUT)
+// POPUP.JS - POINT IMPACT REPORT V1.9 (UNIFIED SINGLE TABLE LAYOUT)
 // ==========================================
 
 /**
@@ -135,7 +135,6 @@ function generateGlobalPopup(e, adminFeature) {
     let lon = e.latlng.lng;
     let dateVal = "-";
     
-    // Coba ambil tanggal dari activeOverlayLayer jika ada
     if (typeof activeOverlayLayer !== 'undefined' && activeOverlayLayer) {
         activeOverlayLayer.eachLayer(function (layer) {
             if (layer.feature && layer.feature.properties && layer.feature.properties.date) {
@@ -153,7 +152,7 @@ function generateGlobalPopup(e, adminFeature) {
 
 /**
  * ==========================================
- * 3. RENDERER UTAMA (1 TEMPLATE KONSISTEN UNTUK SEMUA KONDISI)
+ * 3. RENDERER UTAMA (1 TABEL UNIFIED KONSISTEN)
  * ==========================================
  */
 function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, parameterName, hexColor, dateVal, productConfig, lat, lon, isSafe) {
@@ -161,39 +160,46 @@ function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, 
     let currentDayIdx = (typeof window.currentIndex !== 'undefined') ? window.currentIndex : 0;
     let dayLabelTag = `H${currentDayIdx === 0 ? '0' : '+' + currentDayIdx}`;
     let levelClass = isSafe ? 'badge-safe' : getLevelBadgeClass(levelVal);
+    let headerTitle = isSafe ? '📍 INFORMASI WILAYAH' : '📍 PERINGATAN DINI';
 
     let html = `
         <div class="impact-popup">
             <div class="popup-header" style="border-left: 5px solid ${hexColor};">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div class="popup-title">📍 ${wilayah.toUpperCase()}</div>
+                    <div class="popup-title">${headerTitle}</div>
                     <span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;">${dayLabelTag}</span>
                 </div>
-                <div class="popup-subtitle">${provinsi}</div>
-                <div class="popup-coords">${coordText}</div>
+                <div class="popup-subtitle" style="font-size: 11px; color: #64748b; margin-top: 2px;">${productConfig?.title || productConfig?.name || 'Analisis IBF'}</div>
             </div>
             
-            <div class="popup-body">
-                <div class="product-info">
-                    <span class="info-label">Produk Analisis:</span> 
-                    <span class="info-value">${productConfig?.title || productConfig?.name || 'Analisis IBF'}</span>
-                </div>
-                
+            <div class="popup-body" style="padding-top: 6px;">
                 <div class="table-container">
-                    <table class="impact-table">
+                    <table class="impact-table" style="width: 100%; border-collapse: collapse;">
                         <tbody>
                             <tr>
-                                <td class="day-label">Validitas Prediksi</td>
-                                <td class="date-label">${dateVal}</td>
+                                <td class="day-label" style="padding: 4px 2px; width: 38%; font-weight: bold; color: #475569;">Kab/Kota</td>
+                                <td class="date-label" style="padding: 4px 2px; color: #0f172a;"><b>${wilayah}</b></td>
                             </tr>
                             <tr>
-                                <td class="day-label">Parameter</td>
-                                <td class="date-label">${parameterName}</td>
+                                <td class="day-label" style="padding: 4px 2px; font-weight: bold; color: #475569;">Provinsi</td>
+                                <td class="date-label" style="padding: 4px 2px; color: #0f172a;">${provinsi}</td>
                             </tr>
                             <tr>
-                                <td class="day-label">Tingkat Status</td>
-                                <td class="status-cell">
-                                    <span class="badge ${levelClass}" style="background: ${hexToRgba(hexColor, 0.2)}; color: ${hexColor}; border: 1px solid ${hexColor}; font-weight: bold;">
+                                <td class="day-label" style="padding: 4px 2px; font-weight: bold; color: #475569;">Koordinat</td>
+                                <td class="date-label" style="padding: 4px 2px; color: #0f172a; font-family: monospace; font-size: 11px;">${coordText}</td>
+                            </tr>
+                            <tr>
+                                <td class="day-label" style="padding: 4px 2px; font-weight: bold; color: #475569;">Validitas Prediksi</td>
+                                <td class="date-label" style="padding: 4px 2px; color: #0f172a;">${dateVal}</td>
+                            </tr>
+                            <tr>
+                                <td class="day-label" style="padding: 4px 2px; font-weight: bold; color: #475569;">Parameter</td>
+                                <td class="date-label" style="padding: 4px 2px; color: #0f172a;">${parameterName}</td>
+                            </tr>
+                            <tr>
+                                <td class="day-label" style="padding: 4px 2px; font-weight: bold; color: #475569;">Tingkat Status</td>
+                                <td class="status-cell" style="padding: 4px 2px;">
+                                    <span class="badge ${levelClass}" style="background: ${hexToRgba(hexColor, 0.2)}; color: ${hexColor}; border: 1px solid ${hexColor}; font-weight: bold; display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
                                         ${levelVal.toUpperCase()}
                                     </span>
                                 </td>
@@ -203,8 +209,8 @@ function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, 
                 </div>
             </div>
             
-            <div class="popup-footer">
-                <button class="btn-export" onclick="exportImpactReportPDF('${wilayah}', '${kodeWilayah}', '${levelVal}', ${lat}, ${lon})">
+            <div class="popup-footer" style="margin-top: 8px;">
+                <button class="btn-export" onclick="exportImpactReportPDF('${wilayah}', '${kodeWilayah}', '${levelVal}', ${lat}, ${lon})" style="width: 100%; cursor: pointer;">
                     📄 Unduh Laporan (PDF)
                 </button>
             </div>

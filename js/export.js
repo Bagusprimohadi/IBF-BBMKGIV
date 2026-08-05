@@ -1,9 +1,8 @@
 // ==========================================
-// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.5 (UNIVERSAL SCANNER & FULL IMAGE LETTERHEAD)
+// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.9 (CONFIG-SYNCED SCANNER)
+// - Sepenuhnya selaras dengan CONFIG.products.hazard & CONFIG.products.risiko
 // - Kop Surat Full Image (KOPSURAT.png)
-// - Universal Scanner (Menyapu seluruh kategori hazard, risiko, & oseano tanpa terkecuali)
 // - Ekstraksi Tanggal Langsung dari Fitur Poligon GeoJSON / Window ValidDates
-// - Color-First Matching & Severity Sort untuk overlap polygon
 // ==========================================
 
 /**
@@ -52,22 +51,23 @@ function isPointInPolygonMath(lat, lon, feature) {
 }
 
 /**
- * Membaca status bahaya: Cocokkan WARNA dahulu, baru fallback ke Teks
+ * Membaca status bahaya & risiko secara akurat berdasarkan Config Legends
  */
 function getStatusInfo(props, prodConfig) {
-    let label = props.level || props.status || props.kategori || props.dampak || "Waspada";
-    let color = props.color || props.hex_color || props.fill || "#ef4444";
+    let rawLabel = props.level || props.status || props.kategori || props.dampak || props.risk || props.hazard || props.keterangan || "Waspada";
+    let color = props.color || props.hex_color || props.fill || props.colour || "#ef4444";
     let isSafe = false;
     
-    let textKey = String(label).toLowerCase().trim();
+    let label = String(rawLabel).trim();
+    let lblLower = label.toLowerCase();
     let colorKey = String(color).toUpperCase().trim();
     
+    // Pencocokan dengan legends di config
     if (prodConfig && Array.isArray(prodConfig.legends)) {
-        let matched = null;
-        matched = prodConfig.legends.find(l => String(l.color).toUpperCase().trim() === colorKey);
+        let matched = prodConfig.legends.find(l => String(l.color).toUpperCase().trim() === colorKey);
         
         if (!matched) {
-            matched = prodConfig.legends.find(l => String(l.level || l.label || l.code || '').toLowerCase().trim() === textKey);
+            matched = prodConfig.legends.find(l => String(l.level || l.label || l.code || '').toLowerCase().trim() === lblLower);
         }
         
         if (matched) {
@@ -76,16 +76,24 @@ function getStatusInfo(props, prodConfig) {
         }
     }
     
-    let lblLower = String(label).toLowerCase();
-    if (lblLower.includes("aman") || lblLower.includes("nyaman") || lblLower.includes("rendah") || lblLower.includes("tidak ada") || color.toLowerCase() === '#00ff00' || color.toLowerCase() === '#10b981' || color === 'transparent') {
+    // Deteksi Kondisi Aman (Normal / Transparan / Hijau / Tidak Ada Risiko)
+    let safeKeywords = ["aman", "nyaman", "rendah", "tidak ada", "normal", "hijau", "green", "safe", "low"];
+    let isExplicitlySafe = safeKeywords.some(keyword => lblLower === keyword || lblLower.includes("tidak ada") || lblLower.includes("aman"));
+    
+    // Warna Resmi Peringatan (Kuning, Oranye, Merah)
+    let isWarningColor = ['#FFFF00', '#FFA500', '#FF0000', '#EF4444', '#F97316', '#EAB308', '#B91C1C', '#FFEB3B'].includes(colorKey);
+
+    if (isWarningColor) {
+        isSafe = false;
+    } else if (isExplicitlySafe || colorKey === '#00FF00' || colorKey === '#10B981' || colorKey === 'TRANSPARENT') {
         isSafe = true;
     }
-    
+
     return { label, isSafe, color };
 }
 
 /**
- * Pengecekan Spasial & Severity Sorting (Mencegah salah baca jika poligon tumpang tindih)
+ * Pengecekan Spasial & Severity Sorting
  */
 function findActiveFeature(geojsonData, lat, lon, prodConfig) {
     if (!geojsonData || !geojsonData.features) return null;
@@ -109,7 +117,7 @@ function findActiveFeature(geojsonData, lat, lon, prodConfig) {
 }
 
 /**
- * Ekstraktor Tanggal Cadangan (Fallback jika metadata/poligon kosong)
+ * Ekstraktor Tanggal Cadangan
  */
 function getFallbackDateString(dayIndex) {
     let baseDate = new Date();
@@ -143,42 +151,31 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
         
         let warningsBahaya = [];
         let warningsRisiko = [];
-        let rawDateFromPolygon = null; // Menampung tanggal asli dari atribut poligon GeoJSON
+        let rawDateFromPolygon = null;
 
-        // Fungsi Universal untuk Menscan Seluruh Kategori Produk di CONFIG.products (Bahaya & Risiko/Oseano)
-        async function scanAllConfigCategories(targetGroup) {
+        // Helper untuk memindai grup produk berdasarkan CONFIG (hazard / risiko)
+        async function scanProductGroup(groupObj) {
             let collected = [];
-            if (!CONFIG || !CONFIG.products) return collected;
+            if (!groupObj) return collected;
 
-            for (let catKey of Object.keys(CONFIG.products)) {
-                let categoryObj = CONFIG.products[catKey];
-                if (!categoryObj) continue;
+            for (let prodKey of Object.keys(groupObj)) {
+                let prod = groupObj[prodKey];
+                if (!prod || !prod.folder || !prod.prefix) continue;
 
-                for (let prodKey of Object.keys(categoryObj)) {
-                    let prod = categoryObj[prodKey];
-                    if (!prod || !prod.folder || !prod.prefix) continue;
+                let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
+                let geojson = await fetchGeoJSON(url);
+                if (!geojson) continue;
 
-                    // Klasifikasi apakah produk ini termasuk kategori risiko/dampak atau bahaya murni
-                    let isRisikoItem = prodKey.toLowerCase().includes('risiko') || catKey.toLowerCase().includes('risiko') || prodKey.toLowerCase().includes('impact');
-                    
-                    if (targetGroup === 'bahaya' && isRisikoItem) continue;
-                    if (targetGroup === 'risiko' && !isRisikoItem) continue;
-
-                    let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
-                    let geojson = await fetchGeoJSON(url);
-                    if (!geojson) continue;
-
-                    let feat = findActiveFeature(geojson, lat, lon, prod);
-                    if (feat) {
-                        if (!rawDateFromPolygon && feat.properties) {
-                            rawDateFromPolygon = feat.properties.date || feat.properties.tanggal || feat.properties.validity || feat.properties.valid_date;
-                        }
-                        let stat = getStatusInfo(feat.properties, prod);
-                        if (!stat.isSafe) {
-                            let formattedWarning = `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
-                            if (!collected.includes(formattedWarning)) {
-                                collected.push(formattedWarning);
-                            }
+                let feat = findActiveFeature(geojson, lat, lon, prod);
+                if (feat) {
+                    if (!rawDateFromPolygon && feat.properties) {
+                        rawDateFromPolygon = feat.properties.date || feat.properties.tanggal || feat.properties.validity || feat.properties.valid_date;
+                    }
+                    let stat = getStatusInfo(feat.properties, prod);
+                    if (!stat.isSafe) {
+                        let formattedWarning = `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
+                        if (!collected.includes(formattedWarning)) {
+                            collected.push(formattedWarning);
                         }
                     }
                 }
@@ -186,13 +183,17 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             return collected;
         }
 
-        // 1. Scan Semua Parameter Bahaya secara Universal
-        warningsBahaya = await scanAllConfigCategories('bahaya');
+        // 1. Scan Langsung CONFIG.products.hazard
+        if (CONFIG && CONFIG.products && CONFIG.products.hazard) {
+            warningsBahaya = await scanProductGroup(CONFIG.products.hazard);
+        }
 
-        // 2. Scan Semua Parameter Risiko / Maritim / Oseanografi secara Universal
-        warningsRisiko = await scanAllConfigCategories('risiko');
+        // 2. Scan Langsung CONFIG.products.risiko (Termasuk risiko_diving & risiko_snorkling)
+        if (CONFIG && CONFIG.products && CONFIG.products.risiko) {
+            warningsRisiko = await scanProductGroup(CONFIG.products.risiko);
+        }
 
-        // 3. Penentuan Tanggal Validitas yang Akurat
+        // 3. Tanggal Validitas
         let displayDate = "-";
         if (rawDateFromPolygon) {
             displayDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') 
@@ -208,7 +209,7 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
         }
 
         let textBahaya = warningsBahaya.length > 0 ? warningsBahaya.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Tidak Ada Peringatan</span>';
-        let textRisiko = warningsRisiko.length > 0 ? warningsRisiko.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Risiko Rendah</span>';
+        let textRisiko = warningsRisiko.length > 0 ? warningsRisiko.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Tidak Ada Peringatan</span>';
 
         tableRowsHTML += `
             <tr>
@@ -235,16 +236,7 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             <title>Laporan Komprehensif IBF - ${namaWilayah}</title>
             <style>
                 body { font-family: 'Times New Roman', Times, serif; color: #000; margin: 0; padding: 40px; background: #fff; }
-                
-                /* Layout Kop Surat Full Gambar */
-                .kop-surat-img { 
-                    width: 100%; 
-                    max-width: 100%; 
-                    height: auto; 
-                    display: block; 
-                    margin: 0 auto 25px auto;
-                }
-                
+                .kop-surat-img { width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto 25px auto; }
                 .doc-title { text-align: center; margin-bottom: 30px; }
                 .doc-title h3 { margin: 0; font-size: 16px; text-decoration: underline; text-transform: uppercase; }
                 .meta-box { margin-bottom: 25px; font-size: 14px; line-height: 1.8; }
@@ -253,7 +245,6 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
                 th { background: #f1f5f9; color: #000; padding: 12px 10px; border: 1px solid #000; text-transform: uppercase; font-weight: bold;}
                 .footer-sign { margin-top: 50px; float: right; text-align: center; font-size: 14px; }
                 .footer-sign .space { height: 70px; }
-                
                 @media print { 
                     body { padding: 15px; } 
                     th { background-color: #e2e8f0 !important; -webkit-print-color-adjust: exact; color-adjust: exact; } 
@@ -262,7 +253,6 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             </style>
         </head>
         <body>
-            <!-- KOP SURAT GAMBAR PENUH -->
             <img src="assets/KOPSURAT.png" class="kop-surat-img" alt="Kop Surat BMKG" onerror="this.style.display='none'; alert('Gambar KOPSURAT.png tidak ditemukan di folder assets!');">
 
             <div class="doc-title">

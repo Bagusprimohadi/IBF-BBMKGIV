@@ -1,17 +1,17 @@
 /* ==========================================
-   CONTROLS & INTERFACE - FUTURISTIC STYLE V1.3
+   CONTROLS.CSS - CLEAN LIGHT THEME V1.1
    ========================================== */
 
-/* --- KONTROL KANAN ATAS (DROPDOWN & TOMBOL) --- */
+/* --- 1. KONTROL KANAN ATAS (DROPDOWN & FULLSCREEN) --- */
 .top-right-controls {
     position: absolute; 
-    top: 25px; 
-    right: 25px; 
+    top: 20px; 
+    right: 80px; /* Memberi ruang untuk logo BMKG di ujung kanan */
     z-index: 1000;
     display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
-    align-items: flex-end;
+    flex-direction: row; /* Berjejer mendatar di bagian atas */
+    gap: 8px; 
+    align-items: center;
 }
 
 .dropdown-wrapper { 
@@ -20,65 +20,63 @@
 }
 
 .dropdown-btn {
-    background: rgba(15, 23, 42, 0.85); 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #f8fafc; 
-    border: 1px solid rgba(56, 189, 248, 0.3); 
-    padding: 10px 16px;
-    border-radius: 10px; 
+    background: #ffffff; 
+    color: #0f172a; 
+    border: 1px solid #cbd5e1; 
+    padding: 8px 14px;
+    border-radius: 6px; 
     cursor: pointer; 
     font-family: 'Inter', sans-serif;
-    font-size: 13px; 
+    font-size: 12px; 
     font-weight: 600;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;
     white-space: nowrap;
 }
 
 .dropdown-btn:hover { 
-    background: rgba(30, 41, 59, 0.95); 
-    border-color: rgba(56, 189, 248, 0.6);
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+    background: #f8fafc; 
+    border-color: #0284c7;
+    color: #0284c7;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
 }
 
 .dropdown-content {
     display: none; 
     position: absolute; 
     right: 0; 
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    min-width: 260px; 
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    border-radius: 12px; 
-    z-index: 1001; /* Wajib lebih tinggi dari tombol pembukanya */
+    top: 100%;
+    margin-top: 4px;
+    background: #ffffff;
+    min-width: 220px; 
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    border: 1px solid #cbd5e1;
+    border-radius: 6px; 
+    z-index: 1001; 
     overflow: hidden; 
-    margin-top: 8px;
     max-height: 320px;
     overflow-y: auto;
 }
 
 .dropdown-content button, .dropdown-content a {
-    color: #cbd5e1; 
-    padding: 10px 16px; 
+    color: #334155; 
+    padding: 10px 14px; 
     text-align: left; 
-    background: none;
+    background: #ffffff;
     border: none; 
     width: 100%; 
     cursor: pointer; 
     font-size: 12px; 
     font-weight: 500;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+    border-bottom: 1px solid #f1f5f9; 
     display: block;
     text-decoration: none;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
 }
 
 .dropdown-content button:hover, .dropdown-content a:hover { 
-    background: rgba(56, 189, 248, 0.15); 
-    color: #38bdf8;
+    background: #f0f9ff; 
+    color: #0284c7;
 }
 
 .dropdown-wrapper.active .dropdown-content { 
@@ -86,58 +84,62 @@
 }
 
 
-/* --- KOTAK KONTROL KIRI BAWAH (WAKTU, PLAYBACK, SLIDER) --- */
-.control-box {
+/* --- 2. KOTAK KONTROL KIRI BAWAH (PANEL MENYATU V1.1) --- */
+.left-bottom-panel {
     position: absolute; 
-    bottom: 25px; 
-    left: 25px; 
+    bottom: 20px; 
+    left: 20px; 
     z-index: 1000;
-    background: rgba(15, 23, 42, 0.88); 
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 16px; 
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
-    width: 320px;
-    max-width: calc(100vw - 50px);
+    background: #ffffff; 
+    border: 1px solid #cbd5e1;
+    padding: 14px 16px; 
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); 
+    width: 290px;
+    max-width: calc(100vw - 40px);
     box-sizing: border-box;
+    color: #0f172a;
 }
 
-.control-box h4 { 
-    margin: 0 0 10px 0; 
-    font-family: 'Orbitron', sans-serif;
+.left-bottom-panel h4 { 
+    margin: 0 0 8px 0; 
+    font-family: 'Inter', sans-serif;
     font-size: 11px; 
-    letter-spacing: 1px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: #38bdf8;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.2); 
-    padding-bottom: 6px; 
+    color: #0f172a;
 }
 
+.panel-divider {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 10px 0;
+}
+
+/* Navigasi Waktu & Playback Controls */
 .time-controls { 
-    margin-bottom: 12px; 
     display: flex; 
     flex-direction: column; 
-    gap: 8px; 
+    gap: 6px; 
 }
 
 .button-group { 
     display: flex; 
-    gap: 5px; 
+    gap: 4px; 
     justify-content: space-between; 
     flex-wrap: wrap; 
 }
 
 .time-btn {
     flex: 1; 
-    min-width: 40px;
-    background: rgba(30, 41, 59, 0.8); 
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-    color: #e2e8f0;
-    padding: 7px 4px; 
+    min-width: 32px;
+    background: #f1f5f9; 
+    border: 1px solid #cbd5e1; 
+    color: #334155;
+    padding: 6px 0; 
     cursor: pointer; 
-    border-radius: 6px; 
+    border-radius: 4px; 
     font-size: 11px; 
     font-weight: 600; 
     text-align: center;
@@ -145,109 +147,126 @@
 }
 
 .time-btn:hover { 
-    background: rgba(56, 189, 248, 0.2); 
-    border-color: #38bdf8;
+    background: #e2e8f0; 
+    border-color: #0284c7;
+    color: #0284c7;
 }
 
 .time-btn.active { 
     background: #0284c7; 
-    color: white; 
-    border-color: #38bdf8;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    color: #ffffff; 
+    border-color: #0284c7;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
 }
 
 .nav-playback-group { 
     display: flex; 
-    gap: 6px; 
-    margin-top: 4px; 
+    gap: 4px; 
+    margin-top: 2px; 
 }
 
 .action-btn {
     flex: 1; 
-    background: rgba(30, 41, 59, 0.9); 
-    color: #f8fafc; 
-    border: 1px solid rgba(255, 255, 255, 0.15); 
-    padding: 8px; 
+    background: #f8fafc; 
+    color: #0f172a; 
+    border: 1px solid #cbd5e1; 
+    padding: 6px; 
     cursor: pointer; 
-    border-radius: 6px; 
+    border-radius: 4px; 
     font-size: 11px; 
     font-weight: 600;
     transition: all 0.2s;
 }
 
 .action-btn:hover { 
-    background: rgba(56, 189, 248, 0.25); 
-    border-color: #38bdf8;
+    background: #e2e8f0; 
 }
 
 .action-btn.playing { 
     background: #e11d48; 
-    border-color: #f43f5e;
-    box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+    color: #ffffff;
+    border-color: #e11d48;
 }
 
-/* --- OPACITY SLIDER STYLING --- */
-.opacity-control {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
+/* Slider Transparansi Peta */
 .opacity-control label {
     font-size: 11px;
-    font-family: 'Orbitron', sans-serif;
-    color: #94a3b8;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    color: #475569;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 input[type=range] {
-    accent-color: #38bdf8;
+    accent-color: #0284c7;
     cursor: pointer;
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: #e2e8f0;
     border-radius: 2px;
 }
 
+/* Watermark Pengembang Kiri Bawah */
+.dev-watermark {
+    margin-top: 10px;
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 600;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 6px;
+}
 
-/* ==========================================
-   PENATAN RESPONSIVE LAYAR (LAPTOP & SMARTPHONE)
-   ========================================== */
 
-/* Layar HP / Mobile Devices (Lebar < 768px) */
+/* --- 3. POSISI TOMBOL ZOOM LEAFLET (SUDUT KANAN BAWAH) --- */
+.leaflet-bottom.leaflet-right {
+    bottom: 20px !important;
+    right: 20px !important;
+}
+
+.leaflet-control-zoom {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+    border-radius: 6px !important;
+    overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background-color: #f1f5f9 !important;
+    color: #0284c7 !important;
+}
+
+
+/* --- 4. RESPONSIF SMARTPHONE / LAYAR KECIL --- */
 @media screen and (max-width: 767px) {
     .top-right-controls {
-        top: 80px; /* Diturunkan agar tidak menutupi judul Header */
+        top: 75px;
         right: 12px;
         left: 12px;
-        flex-direction: row;
-        justify-content: flex-end;
         flex-wrap: wrap;
-        gap: 6px;
+        justify-content: flex-end;
     }
 
     .dropdown-btn {
-        padding: 8px 12px;
+        padding: 6px 10px;
         font-size: 11px;
     }
 
-    .dropdown-content {
-        min-width: 220px;
-        right: 0;
-    }
-
-    .control-box {
+    .left-bottom-panel {
         bottom: 12px;
         left: 12px;
-        width: calc(100vw - 24px); /* Lebar menyesuaikan layar HP */
+        width: calc(100vw - 24px);
         padding: 12px;
     }
 
-    /* Turunkan tombol zoom bawaan Leaflet agar tidak tertutup menu */
-    .leaflet-top.leaflet-left {
-        top: 80px !important;
+    .leaflet-bottom.leaflet-right {
+        bottom: 12px !important;
+        right: 12px !important;
     }
 }

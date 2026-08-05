@@ -1,7 +1,7 @@
 // ==========================================
-// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.3 (IMAGE LETTERHEAD & 2001 BUG FIX)
+// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.4 (POLYGON-DIRECT DATE & FULL IMAGE LETTERHEAD)
 // - Kop Surat Full Image (KOPSURAT.png)
-// - Ekstraksi Tanggal Cerdas (Anti-Bug Tahun 2001)
+// - Ekstraksi Tanggal Langsung dari Fitur Poligon GeoJSON / Window ValidDates
 // - Color-First Matching & Severity Sort untuk overlap polygon
 // ==========================================
 
@@ -108,37 +108,11 @@ function findActiveFeature(geojsonData, lat, lon, prodConfig) {
 }
 
 /**
- * Ekstraktor Tanggal Cerdas (Anti-2001)
+ * Ekstraktor Tanggal Cadangan (Fallback jika metadata/poligon kosong)
  */
-function getValidDateString(dayIndex) {
-    let baseDate = null;
-    
-    // Coba baca dari memori metadata BMKG
-    if (window.validDates && window.validDates.length > 0) {
-        let dStr = window.validDates[dayIndex] || window.validDates[window.validDates.length - 1];
-        
-        // Ekstrak angka saja (Tahan banting terhadap format YYYY-MM-DD maupun DD-MM-YYYY)
-        let matches = String(dStr).match(/\d+/g);
-        if (matches && matches.length >= 3) {
-            let y = 0, m = 0, d = 0;
-            if (matches[0].length === 4) { 
-                y = parseInt(matches[0]); m = parseInt(matches[1]) - 1; d = parseInt(matches[2]);
-            } else if (matches[2].length === 4) { 
-                d = parseInt(matches[0]); m = parseInt(matches[1]) - 1; y = parseInt(matches[2]);
-            }
-            
-            // JIKA TAHUN MASUK AKAL (Bukan 2001) -> Gunakan Tanggal Ini
-            if (y >= 2024) {
-                baseDate = new Date(y, m, d);
-            }
-        }
-    }
-
-    // JIKA GAGAL (Memori Kosong / Tahun 2001) -> Paksa gunakan hari ini + index
-    if (!baseDate || isNaN(baseDate.getTime())) {
-        baseDate = new Date();
-        baseDate.setDate(baseDate.getDate() + dayIndex);
-    }
+function getFallbackDateString(dayIndex) {
+    let baseDate = new Date();
+    baseDate.setDate(baseDate.getDate() + dayIndex);
 
     let days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     let months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -165,17 +139,22 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
 
     for (let i = 0; i < 7; i++) {
         let dayLabel = i === 0 ? 'H0' : `H+${i}`;
-        let safeDateString = getValidDateString(i);
         
         let warningsBahaya = [];
         let warningsRisiko = [];
+        let rawDateFromPolygon = null; // Menampung tanggal asli dari atribut poligon GeoJSON
 
+        // 1. Scan Paralel Semua File Hazard di Hari (i)
         if (CONFIG && CONFIG.products && CONFIG.products.hazard) {
             let hazardPromises = Object.values(CONFIG.products.hazard).map(async (prod) => {
                 let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
                 let geojson = await fetchGeoJSON(url);
                 let feat = findActiveFeature(geojson, lat, lon, prod);
                 if (feat) {
+                    // Mencegat tanggal asli dari properti poligon
+                    if (!rawDateFromPolygon && feat.properties) {
+                        rawDateFromPolygon = feat.properties.date || feat.properties.tanggal || feat.properties.validity || feat.properties.valid_date;
+                    }
                     let stat = getStatusInfo(feat.properties, prod);
                     if (!stat.isSafe) return `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
                 }
@@ -185,12 +164,16 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             warningsBahaya = results.filter(r => r !== null);
         }
 
+        // 2. Scan Paralel Semua File Risiko di Hari (i)
         if (CONFIG && CONFIG.products && CONFIG.products.risiko) {
             let risikoPromises = Object.values(CONFIG.products.risiko).map(async (prod) => {
                 let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
                 let geojson = await fetchGeoJSON(url);
                 let feat = findActiveFeature(geojson, lat, lon, prod);
                 if (feat) {
+                    if (!rawDateFromPolygon && feat.properties) {
+                        rawDateFromPolygon = feat.properties.date || feat.properties.tanggal || feat.properties.validity || feat.properties.valid_date;
+                    }
                     let stat = getStatusInfo(feat.properties, prod);
                     if (!stat.isSafe) return `<span style="color:${stat.color}; filter: brightness(0.8); font-weight:bold;">[${prod.name}]</span> : ${stat.label}`;
                 }
@@ -200,13 +183,28 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             warningsRisiko = results.filter(r => r !== null);
         }
 
+        // 3. Penentuan Tanggal Validitas yang Akurat
+        let displayDate = "-";
+        if (rawDateFromPolygon) {
+            displayDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') 
+                ? Utils.formatTanggal(rawDateFromPolygon) 
+                : rawDateFromPolygon;
+        } else if (window.validDates && window.validDates[i]) {
+            let vDate = window.validDates[i];
+            displayDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') 
+                ? Utils.formatTanggal(vDate) 
+                : vDate;
+        } else {
+            displayDate = getFallbackDateString(i);
+        }
+
         let textBahaya = warningsBahaya.length > 0 ? warningsBahaya.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Tidak Ada Peringatan</span>';
         let textRisiko = warningsRisiko.length > 0 ? warningsRisiko.join('<br>') : '<span style="color: #10b981; font-weight: normal;">✅ Risiko Rendah</span>';
 
         tableRowsHTML += `
             <tr>
                 <td style="padding: 10px; border: 1px solid #0f172a; text-align: center; font-weight: bold; background: #f8fafc;">${dayLabel}</td>
-                <td style="padding: 10px; border: 1px solid #0f172a; text-align: center;">${safeDateString}</td>
+                <td style="padding: 10px; border: 1px solid #0f172a; text-align: center;">${displayDate}</td>
                 <td style="padding: 10px; border: 1px solid #0f172a; line-height: 1.6;">${textBahaya}</td>
                 <td style="padding: 10px; border: 1px solid #0f172a; line-height: 1.6;">${textRisiko}</td>
             </tr>
@@ -290,7 +288,6 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
 
             <script>
                 window.onload = function() { 
-                    // Menunggu gambar loading sempurna sebelum jendela print dipicu
                     setTimeout(() => window.print(), 800); 
                 };
             </script>

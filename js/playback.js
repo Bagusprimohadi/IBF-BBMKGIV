@@ -1,6 +1,6 @@
 // ==========================================
-// PLAYBACK.JS - ANIMASI & KONTROL NAVIGASI HARI V1.4
-// Penanganan Otomatis Urutan Hari Tanpa Celah (H0 s/d H+n)
+// PLAYBACK.JS - ANIMASI & KONTROL NAVIGASI HARI V1.5 (FIXED H0 s/d H+6)
+// Penanganan Otomatis Urutan Hari Tanpa Celah (7 Indeks Waktu)
 // ==========================================
 
 let playInterval = null;
@@ -8,21 +8,16 @@ let isPlaying = false;
 let playbackSpeed = 1500; // Kecepatan perpindahan (1500ms per frame)
 
 /**
- * Mendapatkan total hari prediksi aktif dari CONFIG produk atau window.validDates
+ * Mendapatkan total hari prediksi aktif (Dipaksa penuh 7 indeks waktu: H0 s/d H+6)
  */
 function getTotalDays() {
-    if (typeof currentCategory !== 'undefined' && typeof currentProductKey !== 'undefined') {
-        let productConfig = CONFIG?.products?.[currentCategory]?.[currentProductKey];
-        if (productConfig && productConfig.days) {
-            return productConfig.days;
-        }
-    }
-    return (window.validDates && window.validDates.length > 0) ? window.validDates.length : 7;
+    // Memastikan seluruh 7 data time index (H0 sampai H+6) tersedia dan tidak terpotong
+    return 7;
 }
 
 /**
  * Merender ulang tombol-tombol navigasi hari secara lengkap dan berurutan
- * Memastikan tidak ada tombol yang bolong (misal: H0, H+1, H+2, dst.)
+ * Memastikan tombol tampil dari H0, H+1, H+2, hingga H+6 tanpa celah
  */
 function renderDayButtons() {
     const container = document.getElementById('dayButtonsContainer');
@@ -59,7 +54,7 @@ function renderDayButtons() {
 }
 
 /**
- * Pindah ke langkah hari berikutnya (looping kembali ke H0 setelah hari terakhir)
+ * Pindah ke langkah hari berikutnya (looping kembali ke H0 setelah H+6)
  */
 function nextStep() {
     let total = getTotalDays();
@@ -97,7 +92,7 @@ function togglePlay() {
 }
 
 /**
- * Menjalankan animasi pemutaran otomatis siklus hari (H0 -> H+1 -> H+2 ...)
+ * Menjalankan animasi pemutaran otomatis siklus hari (H0 -> H+1 -> ... -> H+6)
  */
 function startPlay() {
     if (isPlaying) return;

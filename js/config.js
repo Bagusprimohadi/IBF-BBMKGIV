@@ -128,10 +128,10 @@ const CONFIG = {
                 extension: ".geojson",
                 days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
                 legends: [
-                    { color: "transparent", label: "Risiko Rendah", level: "normal" },
-                    { color: "#FFFF00", label: "Risiko Sedang (Waspada)", level: "waspada" },
-                    { color: "#FFA500", label: "Risiko Tinggi (Siaga)", level: "siaga" },
-                    { color: "#FF0000", label: "Risiko Sangat Tinggi (Awas)", level: "awas" }
+                    { color: "transparent", label: "Tidak Ada Risiko", level: "normal" },
+                    { color: "#FFFF00", label: "Risiko Rendah (Waspada)", level: "waspada" },
+                    { color: "#FFA500", label: "Risiko Sedang (Siaga)", level: "siaga" },
+                    { color: "#FF0000", label: "Risiko Tinggi (Awas)", level: "awas" }
                 ]
             },
             "risiko_longsor": {
@@ -143,10 +143,10 @@ const CONFIG = {
                 extension: ".geojson",
                 days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
                 legends: [
-                    { color: "transparent", label: "Risiko Rendah", level: "normal" },
-                    { color: "#FFFF00", label: "Risiko Sedang (Waspada)", level: "waspada" },
-                    { color: "#FFA500", label: "Risiko Tinggi (Siaga)", level: "siaga" },
-                    { color: "#FF0000", label: "Risiko Sangat Tinggi (Awas)", level: "awas" }
+                    { color: "transparent", label: "Tidak Ada Risiko", level: "normal" },
+                    { color: "#FFFF00", label: "Risiko Rendah (Waspada)", level: "waspada" },
+                    { color: "#FFA500", label: "Risiko Sedang (Siaga)", level: "siaga" },
+                    { color: "#FF0000", label: "Risiko Tinggi (Awas)", level: "awas" }
                 ]
             },
             "risiko_snorkling": {
@@ -158,10 +158,10 @@ const CONFIG = {
                 extension: ".geojson",
                 days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
                 legends: [
-                    { color: "#00FF00", label: "Risiko Rendah", level: "normal" },
-                    { color: "#FFFF00", label: "Risiko Sedang", level: "waspada" },
-                    { color: "#FFA500", label: "Risiko Tinggi", level: "siaga" },
-                    { color: "#FF0000", label: "Risiko Sangat Tinggi", level: "awas" }
+                    { color: "#00FF00", label: "Tidak Ada Risiko", level: "normal" },
+                    { color: "#FFFF00", label: "Risiko Rendah", level: "waspada" },
+                    { color: "#FFA500", label: "Risiko Sedang", level: "siaga" },
+                    { color: "#FF0000", label: "Risiko Tinggi", level: "awas" }
                 ]
             },
             "risiko_diving": {
@@ -173,10 +173,10 @@ const CONFIG = {
                 extension: ".geojson",
                 days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
                 legends: [
-                    { color: "#00FF00", label: "Risiko Rendah", level: "normal" },
-                    { color: "#FFFF00", label: "Risiko Sedang", level: "waspada" },
-                    { color: "#FFA500", label: "Risiko Tinggi", level: "siaga" },
-                    { color: "#FF0000", label: "Risiko Sangat Tinggi", level: "awas" }
+                    { color: "#00FF00", label: "Tidak Ada Risiko", level: "normal" },
+                    { color: "#FFFF00", label: "Risiko Rendah", level: "waspada" },
+                    { color: "#FFA500", label: "Risiko Sedang", level: "siaga" },
+                    { color: "#FF0000", label: "Risiko Tinggi", level: "awas" }
                 ]
             }
         }

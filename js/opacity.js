@@ -1,35 +1,42 @@
 // ==========================================
-// OPACITY.JS - KONTROL TRANSPARANSI LAYER V1.1
+// OPACITY.JS - KONTROL TRANSPARANSI SMOOTH V1.2
 // ==========================================
 
 /**
- * Mengubah tingkat transparansi (opacity) overlay layer GeoJSON yang aktif
- * @param {string|number} val - Nilai opacity dari slider (0.00 hingga 1.00)
+ * Mengubah tingkat transparansi (opacity) overlay layer GeoJSON
+ * @param {string|number} val - Nilai persentase dari slider (0 hingga 100)
  */
 function updateOpacity(val) {
-    // 1. Konversi nilai input ke float secara presisi
-    let numericOpacity = parseFloat(val);
+    // 1. Ambil nilai persen bulat (0 - 100)
+    let percent = parseInt(val, 10);
+    if (isNaN(percent)) percent = 65;
 
-    // Validasi range agar selalu berada di antara 0 dan 1
-    if (isNaN(numericOpacity)) numericOpacity = 0.65;
-    if (numericOpacity < 0) numericOpacity = 0;
-    if (numericOpacity > 1) numericOpacity = 1;
+    // 2. Konversi persen ke desimal Leaflet (0.00 - 1.00)
+    let decimalOpacity = percent / 100;
 
-    // 2. Simpan nilai ke variabel global jika ada
-    if (typeof currentOpacity !== 'undefined') {
-        currentOpacity = numericOpacity;
-    }
-
-    // 3. Update teks indikator persentase UI (contoh: 0.65 -> 65%)
+    // 3. Update teks indikator persen di UI
     let opacityLabel = document.getElementById('opacityVal');
     if (opacityLabel) {
-        opacityLabel.innerText = Math.round(numericOpacity * 100) + '%';
+        opacityLabel.innerText = percent + '%';
     }
 
-    // 4. Terapkan perubahan style transparansi ke activeOverlayLayer Leaflet
+    // 4. Simpan ke variabel global jika ada
+    if (typeof currentOpacity !== 'undefined') {
+        currentOpacity = decimalOpacity;
+    }
+
+    // 5. Terapkan transparansi ke layer GeoJSON yang sedang aktif
     if (typeof activeOverlayLayer !== 'undefined' && activeOverlayLayer) {
-        activeOverlayLayer.setStyle({
-            fillOpacity: numericOpacity
-        });
+        // Terapkan ke LayerGroup / GeoJSON Layer
+        if (typeof activeOverlayLayer.setStyle === 'function') {
+            activeOverlayLayer.setStyle({
+                fillOpacity: decimalOpacity,
+                opacity: Math.min(decimalOpacity + 0.2, 1) // Outline tetap sedikit lebih tegas
+            });
+        } 
+        // Jika berupa TileLayer / Raster
+        else if (typeof activeOverlayLayer.setOpacity === 'function') {
+            activeOverlayLayer.setOpacity(decimalOpacity);
+        }
     }
 }

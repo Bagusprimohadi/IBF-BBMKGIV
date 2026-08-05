@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IBF Operational WebGIS - BBMKG IV</title>
+    <title>WEBGIS IBF - BBMKG IV</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -49,12 +49,12 @@
         <div class="dropdown-wrapper" id="hazardDropdown">
             <button class="dropdown-btn" onclick="toggleDropdown('hazardDropdown')">⚡ Potensi Bahaya ▾</button>
             <div class="dropdown-content">
-                <button onclick="switchProduct('hazard', 'angin')">Angin Kencang (9 Kelas)</button>
+                <button onclick="switchProduct('hazard', 'angin')">Angin Kencang (Hazard)</button>
                 <button onclick="switchProduct('hazard', 'banjir')">Banjir (Hazard)</button>
                 <button onclick="switchProduct('hazard', 'longsor')">Longsor (Hazard)</button>
-                <button onclick="switchProduct('hazard', 'suhu')">Udara Panas (Heat Stress)</button>
-                <button onclick="switchProduct('hazard', 'snorkling')">Aktivitas Snorkling</button>
-                <button onclick="switchProduct('hazard', 'diving')">Aktivitas Diving</button>
+                <button onclick="switchProduct('hazard', 'suhu')">Heat Stress Udara Panas (Hazard)</button>
+                <button onclick="switchProduct('hazard', 'snorkling')">Bahaya Aktivitas Snorkling</button>
+                <button onclick="switchProduct('hazard', 'diving')">Bahaya Aktivitas Diving</button>
             </div>
         </div>
 
@@ -79,14 +79,12 @@
     <div class="control-box left-bottom-panel" id="mobilePanel">
         <!-- Header Mobile dengan Tombol Toggle -->
         <div class="panel-header-mobile" onclick="toggleMobilePanel()">
-            <h4>Navigasi & Control Panel</h4>
+            <h4>Panel Kontrol & Navigasi Waktu</h4>
             <button id="togglePanelBtn" class="btn-toggle-panel" aria-label="Toggle Panel">▼</button>
         </div>
 
         <!-- Isi Konten Panel -->
         <div class="panel-body-content" id="panelBody">
-            <!-- Navigasi Waktu Prediksi -->
-            <h4>Navigasi Waktu Prediksi</h4>
             <div class="time-controls">
                 <div class="button-group" id="dayButtonsContainer"></div>
                 <div class="nav-playback-group">

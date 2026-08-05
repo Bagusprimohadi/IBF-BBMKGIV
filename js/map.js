@@ -1,5 +1,5 @@
 // ==========================================
-// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.6 (CUSTOM PANE BOUNDARIES)
+// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.7 (ADMIN BOUNDARIES ALWAYS VISIBLE)
 // ==========================================
 
 // Variabel Global Instance Peta
@@ -24,8 +24,8 @@ function initMap() {
         zoomControl: false 
     });
 
-    // 1. BUAT CUSTOM PANE KHUSUS UNTUK GARIS ADMINISTRASI
-    // Z-Index 650 menempatkannya di atas overlay data hazard (z-index default: 400)
+    // 1. BUAT CUSTOM PANE KHUSUS UNTUK GARIS ADMINISTRASI (Paling Atas)
+    // Z-Index 650 menempatkannya jauh di atas layer hazard (z-index 400) & tile layer
     map.createPane('adminBoundariesPane');
     map.getPane('adminBoundariesPane').style.zIndex = 650;
     map.getPane('adminBoundariesPane').style.pointerEvents = 'none'; // Klik tembus 100% ke hazard di bawah
@@ -52,7 +52,6 @@ function initMap() {
 
 /**
  * Memuat batas administrasi (Provinsi & Kabupaten)
- * Menggunakan adminBoundariesPane agar selalu berada di paling atas tanpa menghalangi klik pop-up hazard.
  */
 function loadAdminBoundaries() {
     if (!map) return;
@@ -66,11 +65,12 @@ function loadAdminBoundaries() {
             })
             .then(data => {
                 kabupatenLayer = L.geoJSON(data, {
-                    pane: 'adminBoundariesPane', // Masukkan ke Pane khusus paling atas
+                    pane: 'adminBoundariesPane', // Render di Pane khusus z-index 650
                     style: {
-                        color: "rgba(100, 116, 139, 0.4)",        // Garis hitam murni v1.0
-                        weight: 0.8,             // Ketebalan 0.8px
-                        fillColor: "transparent",
+                        color: "rgba(100, 116, 139, 0.4)",        // Warna garis hitam murni
+                        weight: 1.2,             // Dinaikkan ke 1.2px agar terlihat lebih kontras & jelas
+                        opacity: 0.85,           // Opasitas garis 85%
+                        fill: false,             // Matikan fill total
                         fillOpacity: 0
                     },
                     onEachFeature: function (feature, layer) {
@@ -98,11 +98,12 @@ function loadAdminBoundaries() {
             })
             .then(data => {
                 provinsiLayer = L.geoJSON(data, {
-                    pane: 'adminBoundariesPane', // Masukkan ke Pane khusus paling atas
+                    pane: 'adminBoundariesPane', // Render di Pane khusus z-index 650
                     style: {
-                        color: "#0284c7",        // Garis hitam murni v1.0
-                        weight: 2.0,             // Ketebalan 2.0px (lebih tebal)
-                        fillColor: "transparent",
+                        color: "#0284c7",        // Warna garis hitam murni
+                        weight: 2.2,             // Garis provinsi lebih tebal (2.2px)
+                        opacity: 1.0,            // Opasitas 100%
+                        fill: false,             // Matikan fill total
                         fillOpacity: 0
                     }
                 }).addTo(map);

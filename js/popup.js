@@ -1,5 +1,5 @@
 // ==========================================
-// POPUP.JS - POINT IMPACT REPORT V1.7 (REVERSE COLOR MATCHING FIX)
+// POPUP.JS - POINT IMPACT REPORT V1.8 (UNIFIED CONSISTENT LAYOUT)
 // ==========================================
 
 /**
@@ -18,43 +18,59 @@ function getAdminFeatureByLatLng(latlng) {
 }
 
 /**
- * FUNGSI BANTUAN 2: Mencocokkan Data Poligon dengan Konfigurasi Legenda secara Akurat
+ * FUNGSI BANTUAN 2: Mendapatkan Nama Parameter Utama yang Konsisten Berdasarkan Produk Aktif
+ */
+function getCoreParameterName(productConfig) {
+    let key = (typeof currentProductKey !== 'undefined') ? currentProductKey : '';
+    if (key === 'suhu' || key.includes('suhu') || key.includes('heat')) return "Udara Panas";
+    if (key === 'banjir' || key.includes('banjir')) return "Banjir";
+    if (key === 'longsor' || key.includes('longsor')) return "Longsor";
+    if (key === 'angin' || key.includes('angin')) return "Angin Kencang";
+    
+    if (productConfig) {
+        let name = productConfig.name || productConfig.title || "";
+        if (name.toLowerCase().includes('udara panas')) return "Udara Panas";
+        if (name.toLowerCase().includes('banjir')) return "Banjir";
+        if (name.toLowerCase().includes('longsor')) return "Longsor";
+        if (name.toLowerCase().includes('angin')) return "Angin Kencang";
+        return name;
+    }
+    return "Analisis Dampak Bencana";
+}
+
+/**
+ * FUNGSI BANTUAN 3: Mencocokkan Data Poligon dengan Konfigurasi Legenda secara Akurat
  */
 function resolveHazardInfo(props, productConfig) {
-    // Cari kunci dari text (kategori biasanya lebih akurat dari level di BMKG)
     let textKey = String(props.kategori || props.level || props.code || '').toLowerCase().trim();
     let colorKey = String(props.color || props.hex_color || '').toUpperCase().trim();
     
-    let label = props.kategori || props.level || props.status || "Waspada";
+    let label = props.level || props.status || "Waspada";
     let color = props.color || props.hex_color || "#ef4444";
     let isSafe = false;
 
     if (productConfig && productConfig.legends && Array.isArray(productConfig.legends)) {
         let matched = null;
 
-        // 1. Coba cocokkan berdasarkan Teks Level/Kategori
         matched = productConfig.legends.find(l => 
             String(l.level || l.label || l.code || '').toLowerCase().trim() === textKey
         );
         
-        // 2. JIKA TEKS GAGAL/SALAH, COCOKKAN BERDASARKAN WARNA POLIGON (Reverse Match)
-        // Ini menjamin pop-up selalu 100% sama dengan warna poligon yang diklik
         if (!matched && colorKey) {
             matched = productConfig.legends.find(l => String(l.color).toUpperCase().trim() === colorKey);
         }
         
-        // Jika ketemu di legenda, timpa dengan data resmi dari legenda
         if (matched) {
             label = matched.label || matched.level || label;
             color = matched.color || color;
         }
     }
 
-    // 3. Deteksi otomatis jika ini sebenarnya adalah zona aman (Nyaman / Tidak Ada Potensi)
     let lblLower = String(label).toLowerCase();
     if (lblLower.includes("aman") || lblLower.includes("nyaman") || lblLower.includes("tidak ada") || color.toLowerCase() === '#00ff00') {
         isSafe = true;
-        color = "#10b981"; // Kunci ke warna hijau UI
+        color = "#10b981";
+        label = "AMAN / NORMAL";
     }
 
     return { label, color, isSafe };
@@ -72,7 +88,6 @@ function bindFeaturePopup(hazardFeature, hazardLayer, productConfig, clickEvent)
     let lon = clickEvent.latlng.lng;
     let props = hazardFeature.properties || {};
 
-    // Dapatkan Nama Wilayah
     let rawWilayah = props.kabupaten || props.WADMKK || props.NAME_2 || props.NAMOBJ || "";
     let rawProvinsi = props.provinsi || props.WADMPR || props.NAME_1 || "";
     let kodeWilayah = props.KODBPS || props.KAB_CODE || props.id || '-';
@@ -88,24 +103,16 @@ function bindFeaturePopup(hazardFeature, hazardLayer, productConfig, clickEvent)
         }
     }
 
-    // Resolusi Info Hazard Akurat
     let hazardInfo = resolveHazardInfo(props, productConfig);
     let dateVal = props.date ? ((typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') ? Utils.formatTanggal(props.date) : props.date) : "-";
-    let categoryIdVal = props.category_id !== undefined ? props.category_id : (props.code !== undefined ? props.code : "-");
+    let parameterName = getCoreParameterName(productConfig);
 
-    // Jika poligon ternyata terdeteksi "Aman", lempar ke render aman
-    if (hazardInfo.isSafe) {
-        renderSafePopup(clickEvent.latlng, rawWilayah, rawProvinsi, productConfig);
-        return;
-    }
-
-    // Render Danger/Warning Popup
-    renderDangerPopup(clickEvent.latlng, rawWilayah, rawProvinsi, kodeWilayah, hazardInfo.label, hazardInfo.label, categoryIdVal, hazardInfo.color, dateVal, productConfig, lat, lon);
+    renderUniversalPopup(clickEvent.latlng, rawWilayah, rawProvinsi, kodeWilayah, hazardInfo.label, parameterName, hazardInfo.color, dateVal, productConfig, lat, lon, hazardInfo.isSafe);
 }
 
 /**
  * ==========================================
- * 2. ENTRY POINT: KLIK AREA AMAN / LAUTAN KOSONG
+ * 2. ENTRY POINT: KLIK AREA AMAN / KOSONG
  * ==========================================
  */
 function generateGlobalPopup(e, adminFeature) {
@@ -121,21 +128,39 @@ function generateGlobalPopup(e, adminFeature) {
 
     let rawWilayah = props.WADMKK || props.kabupaten || props.KABUPATEN || props.NAME_2 || props.NAME || props.NAMOBJ || "Area Tidak Diketahui";
     let rawProvinsi = props.WADMPR || props.provinsi || props.PROVINSI || props.NAME_1 || "Indonesia";
+    let kodeWilayah = props.KODBPS || props.KAB_CODE || props.id || '-';
     let productConfig = (typeof CONFIG !== 'undefined' && typeof currentCategory !== 'undefined' && typeof currentProductKey !== 'undefined') ? CONFIG.products[currentCategory]?.[currentProductKey] : null;
 
-    renderSafePopup(e.latlng, rawWilayah, rawProvinsi, productConfig);
+    let lat = e.latlng.lat;
+    let lon = e.latlng.lng;
+    let dateVal = "-";
+    
+    // Coba ambil tanggal dari activeOverlayLayer jika ada
+    if (typeof activeOverlayLayer !== 'undefined' && activeOverlayLayer) {
+        activeOverlayLayer.eachLayer(function (layer) {
+            if (layer.feature && layer.feature.properties && layer.feature.properties.date) {
+                dateVal = layer.feature.properties.date;
+            }
+        });
+    }
+    if (dateVal !== "-" && typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') {
+        dateVal = Utils.formatTanggal(dateVal);
+    }
+
+    let parameterName = getCoreParameterName(productConfig);
+    renderUniversalPopup(e.latlng, rawWilayah, rawProvinsi, kodeWilayah, "AMAN / NORMAL", parameterName, "#10b981", dateVal, productConfig, lat, lon, true);
 }
 
 /**
  * ==========================================
- * RENDERER: TAMPILAN POPUP BAHAYA (MERAH/KUNING/DSB)
+ * 3. RENDERER UTAMA (1 TEMPLATE KONSISTEN UNTUK SEMUA KONDISI)
  * ==========================================
  */
-function renderDangerPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, kategoriVal, categoryIdVal, hexColor, dateVal, productConfig, lat, lon) {
+function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, parameterName, hexColor, dateVal, productConfig, lat, lon, isSafe) {
     let coordText = (typeof Utils !== 'undefined' && typeof Utils.formatKoordinat === 'function') ? `${Utils.formatKoordinat(lat, 'lat')}, ${Utils.formatKoordinat(lon, 'lon')}` : `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
     let currentDayIdx = (typeof window.currentIndex !== 'undefined') ? window.currentIndex : 0;
     let dayLabelTag = `H${currentDayIdx === 0 ? '0' : '+' + currentDayIdx}`;
-    let levelClass = getLevelBadgeClass(levelVal);
+    let levelClass = isSafe ? 'badge-safe' : getLevelBadgeClass(levelVal);
 
     let html = `
         <div class="impact-popup">
@@ -147,20 +172,28 @@ function renderDangerPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, kat
                 <div class="popup-subtitle">${provinsi}</div>
                 <div class="popup-coords">${coordText}</div>
             </div>
+            
             <div class="popup-body">
                 <div class="product-info">
                     <span class="info-label">Produk Analisis:</span> 
                     <span class="info-value">${productConfig?.title || productConfig?.name || 'Analisis IBF'}</span>
                 </div>
+                
                 <div class="table-container">
                     <table class="impact-table">
                         <tbody>
-                            <tr><td class="day-label">Validitas</td><td class="date-label">${dateVal}</td></tr>
-                            <tr><td class="day-label">Parameter</td><td class="date-label">${kategoriVal}</td></tr>
+                            <tr>
+                                <td class="day-label">Validitas Prediksi</td>
+                                <td class="date-label">${dateVal}</td>
+                            </tr>
+                            <tr>
+                                <td class="day-label">Parameter</td>
+                                <td class="date-label">${parameterName}</td>
+                            </tr>
                             <tr>
                                 <td class="day-label">Tingkat Status</td>
                                 <td class="status-cell">
-                                    <span class="badge ${levelClass}" style="background: ${hexToRgba(hexColor, 0.2)}; color: ${hexColor}; border: 1px solid ${hexColor};">
+                                    <span class="badge ${levelClass}" style="background: ${hexToRgba(hexColor, 0.2)}; color: ${hexColor}; border: 1px solid ${hexColor}; font-weight: bold;">
                                         ${levelVal.toUpperCase()}
                                     </span>
                                 </td>
@@ -169,60 +202,11 @@ function renderDangerPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, kat
                     </table>
                 </div>
             </div>
+            
             <div class="popup-footer">
-                <button class="btn-export" onclick="exportImpactReportPDF('${wilayah}', '${kodeWilayah}', '${levelVal}', ${lat}, ${lon})">📄 Unduh Laporan (PDF)</button>
-            </div>
-        </div>
-    `;
-
-    L.popup({ maxWidth: 380, minWidth: 300, className: 'futuristic-popup' })
-        .setLatLng(latlng)
-        .setContent(html)
-        .openOn(map);
-}
-
-/**
- * ==========================================
- * RENDERER: TAMPILAN POPUP AMAN (HIJAU)
- * ==========================================
- */
-function renderSafePopup(latlng, wilayah, provinsi, productConfig) {
-    let lat = latlng.lat;
-    let lon = latlng.lng;
-    let coordText = (typeof Utils !== 'undefined' && typeof Utils.formatKoordinat === 'function') ? `${Utils.formatKoordinat(lat, 'lat')}, ${Utils.formatKoordinat(lon, 'lon')}` : `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
-    let currentDayIdx = (typeof window.currentIndex !== 'undefined') ? window.currentIndex : 0;
-    let dayLabelTag = `H${currentDayIdx === 0 ? '0' : '+' + currentDayIdx}`;
-    let hexColor = "#10b981";
-
-    let html = `
-        <div class="impact-popup">
-            <div class="popup-header" style="border-left: 5px solid ${hexColor};">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div class="popup-title">📍 ${wilayah.toUpperCase()}</div>
-                    <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;">${dayLabelTag}</span>
-                </div>
-                <div class="popup-subtitle">${provinsi}</div>
-                <div class="popup-coords">${coordText}</div>
-            </div>
-            <div class="popup-body">
-                <div class="product-info">
-                    <span class="info-label">Produk Analisis:</span> 
-                    <span class="info-value">${productConfig?.title || productConfig?.name || 'Analisis IBF'}</span>
-                </div>
-                <div class="table-container">
-                    <table class="impact-table">
-                        <tbody>
-                            <tr>
-                                <td class="day-label">Tingkat Status</td>
-                                <td class="status-cell">
-                                    <span class="badge badge-safe" style="background: ${hexToRgba(hexColor, 0.2)}; color: #065f46; border: 1px solid ${hexColor}; font-weight: bold;">
-                                        ✅ AMAN / NORMAL
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <button class="btn-export" onclick="exportImpactReportPDF('${wilayah}', '${kodeWilayah}', '${levelVal}', ${lat}, ${lon})">
+                    📄 Unduh Laporan (PDF)
+                </button>
             </div>
         </div>
     `;
@@ -254,6 +238,6 @@ function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lon) {
     if (typeof triggerPDFExport === 'function') {
         triggerPDFExport(namaWilayah, kodeWilayah, levelVal, lat, lon);
     } else {
-        alert(`Mencetak PDF untuk ${namaWilayah} [${levelVal}]...`);
+        alert(`Mencetak Laporan PDF untuk ${namaWilayah} [Status: ${levelVal}] pada Koordinat: ${lat?.toFixed(4)}, ${lon?.toFixed(4)}...`);
     }
 }

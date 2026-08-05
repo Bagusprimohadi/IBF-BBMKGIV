@@ -1,34 +1,35 @@
 // ==========================================
-// OPACITY.JS - PENGATUR TRANSPARANSI LAYER GEOJSON V1.2
+// OPACITY.JS - KONTROL TRANSPARANSI LAYER V1.1
 // ==========================================
 
 /**
- * Fungsi yang dipanggil secara real-time saat slider opacity digeser
- * @param {number|string} val (Nilai dari 0 sampai 100)
+ * Mengubah tingkat transparansi (opacity) overlay layer GeoJSON yang aktif
+ * @param {string|number} val - Nilai opacity dari slider (0.00 hingga 1.00)
  */
 function updateOpacity(val) {
-    // Ubah nilai integer (0-100) menjadi desimal (0.0 - 1.0) untuk fillOpacity Leaflet GeoJSON
-    let numericVal = parseFloat(val);
-    currentOpacity = numericVal / 100;
+    // 1. Konversi nilai input ke float secara presisi
+    let numericOpacity = parseFloat(val);
 
-    // Update teks persentase di label HTML
-    let valSpan = document.getElementById('opacityVal');
-    if (valSpan) {
-        valSpan.innerText = Math.round(numericVal) + '%';
+    // Validasi range agar selalu berada di antara 0 dan 1
+    if (isNaN(numericOpacity)) numericOpacity = 0.65;
+    if (numericOpacity < 0) numericOpacity = 0;
+    if (numericOpacity > 1) numericOpacity = 1;
+
+    // 2. Simpan nilai ke variabel global jika ada
+    if (typeof currentOpacity !== 'undefined') {
+        currentOpacity = numericOpacity;
     }
 
-    // Terapkan transparansi langsung ke layer vektor GeoJSON yang sedang aktif di peta
+    // 3. Update teks indikator persentase UI (contoh: 0.65 -> 65%)
+    let opacityLabel = document.getElementById('opacityVal');
+    if (opacityLabel) {
+        opacityLabel.innerText = Math.round(numericOpacity * 100) + '%';
+    }
+
+    // 4. Terapkan perubahan style transparansi ke activeOverlayLayer Leaflet
     if (typeof activeOverlayLayer !== 'undefined' && activeOverlayLayer) {
         activeOverlayLayer.setStyle({
-            fillOpacity: currentOpacity
+            fillOpacity: numericOpacity
         });
     }
 }
-
-// Event listener saat DOM selesai dimuat
-document.addEventListener('DOMContentLoaded', function () {
-    const slider = document.getElementById('opacitySlider');
-    if (slider) {
-        updateOpacity(slider.value);
-    }
-});

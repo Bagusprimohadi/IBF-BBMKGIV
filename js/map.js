@@ -1,5 +1,5 @@
 // ==========================================
-// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.2 (PURE GEOJSON)
+// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.2 (CLEAN THEME)
 // ==========================================
 
 // Variabel Global Instance Peta
@@ -15,13 +15,19 @@ let kabupatenLayer = null;
 function initMap() {
     if (map !== null) return map;
 
+    // Inisialisasi Peta (Matikan zoomControl default agar bisa dipindah ke kanan bawah)
     map = L.map('map', {
         center: CONFIG.map.defaultCenter || [-1.75, 125.25],
         zoom: CONFIG.map.defaultZoom || 5,
         minZoom: 4,
         maxZoom: 12,
-        zoomControl: true
+        zoomControl: false 
     });
+
+    // Pindahkan Tombol Zoom In / Zoom Out ke Sudut Kanan Bawah
+    L.control.zoom({
+        position: 'bottomright'
+    }).addTo(map);
 
     // Panggil pemuatan layer administrasi wilayah
     loadAdminBoundaries();
@@ -46,10 +52,10 @@ function loadAdminBoundaries() {
             .then(data => {
                 kabupatenLayer = L.geoJSON(data, {
                     style: {
-                        color: "rgba(255, 255, 255, 0.25)", // Garis batas tipis
+                        color: "rgba(100, 116, 139, 0.4)", // Garis batas tipis abu-abu
                         weight: 0.8,
                         fillColor: "#ffffff",
-                        fillOpacity: 0.001 // Sangat transparan tetapi tetap dapat menangkap klik kursor
+                        fillOpacity: 0.001 // Transparan visual tetapi aktif menangkap klik kursor
                     },
                     onEachFeature: function (feature, layer) {
                         let props = feature.properties || {};
@@ -94,8 +100,8 @@ function loadAdminBoundaries() {
             .then(data => {
                 provinsiLayer = L.geoJSON(data, {
                     style: {
-                        color: "#38bdf8", // Warna garis cyan futuristik
-                        weight: 1.8,
+                        color: "#0284c7", // Warna garis biru operasional
+                        weight: 1.6,
                         fillColor: "transparent",
                         fillOpacity: 0,
                         interactive: false // Mencegah pemblokiran klik ke layer bawahnya

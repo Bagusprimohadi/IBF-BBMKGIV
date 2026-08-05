@@ -1,6 +1,7 @@
 // ==========================================
-// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.2 (ULTIMATE ACCURACY FIX)
-// - Integrasi Tanggal Validitas dari Metadata (Sinkron dengan H0)
+// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.3 (IMAGE LETTERHEAD & 2001 BUG FIX)
+// - Kop Surat Full Image (KOPSURAT.png)
+// - Ekstraksi Tanggal Cerdas (Anti-Bug Tahun 2001)
 // - Color-First Matching & Severity Sort untuk overlap polygon
 // ==========================================
 
@@ -50,8 +51,7 @@ function isPointInPolygonMath(lat, lon, feature) {
 }
 
 /**
- * Membaca status bahaya: 
- * Prioritas 1 = Cocokkan WARNA (Karena visual warna tidak pernah bohong)
+ * Membaca status bahaya: Cocokkan WARNA dahulu, baru fallback ke Teks
  */
 function getStatusInfo(props, prodConfig) {
     let label = props.level || props.status || props.kategori || props.dampak || "Waspada";
@@ -63,16 +63,12 @@ function getStatusInfo(props, prodConfig) {
     
     if (prodConfig && Array.isArray(prodConfig.legends)) {
         let matched = null;
-        
-        // 1. PRIORITAS UTAMA: Cocokkan Warna
         matched = prodConfig.legends.find(l => String(l.color).toUpperCase().trim() === colorKey);
         
-        // 2. Jika warna tidak ada/gagal, baru cocokkan Teks
         if (!matched) {
             matched = prodConfig.legends.find(l => String(l.level || l.label || l.code || '').toLowerCase().trim() === textKey);
         }
         
-        // 3. Timpa nilai dengan label resmi dari Legends
         if (matched) {
             label = matched.label || matched.level || label;
             color = matched.color || color;
@@ -93,20 +89,18 @@ function getStatusInfo(props, prodConfig) {
 function findActiveFeature(geojsonData, lat, lon, prodConfig) {
     if (!geojsonData || !geojsonData.features) return null;
     
-    // Cari SEMUA poligon yang beririsan dengan klik kursor
     let intersectingFeatures = geojsonData.features.filter(f => isPointInPolygonMath(lat, lon, f));
     
     if (intersectingFeatures.length === 0) return null;
     if (intersectingFeatures.length === 1) return intersectingFeatures[0];
     
-    // Jika ada >1 poligon bertumpuk (misal Siaga di atas Waspada), pilih level yang paling parah (berdasarkan urutan legenda)
     if (prodConfig && prodConfig.legends) {
         intersectingFeatures.sort((a, b) => {
             let sA = getStatusInfo(a.properties, prodConfig);
             let sB = getStatusInfo(b.properties, prodConfig);
             let idxA = prodConfig.legends.findIndex(l => (l.label || l.level) === sA.label);
             let idxB = prodConfig.legends.findIndex(l => (l.label || l.level) === sB.label);
-            return idxB - idxA; // Semakin ke bawah di legenda, makin parah (Waspada -> Siaga -> Awas)
+            return idxB - idxA; 
         });
     }
     
@@ -114,24 +108,35 @@ function findActiveFeature(geojsonData, lat, lon, prodConfig) {
 }
 
 /**
- * Sinkronisasi Tanggal dengan Data window.validDates dari metadata.geojson
+ * Ekstraktor Tanggal Cerdas (Anti-2001)
  */
 function getValidDateString(dayIndex) {
-    let baseDate = new Date(); // Fallback
+    let baseDate = null;
     
+    // Coba baca dari memori metadata BMKG
     if (window.validDates && window.validDates.length > 0) {
-        let dStr = window.validDates[dayIndex];
-        if (!dStr) dStr = window.validDates[window.validDates.length - 1]; // Fallback ke hari terakhir jika habis
+        let dStr = window.validDates[dayIndex] || window.validDates[window.validDates.length - 1];
         
-        // Memaksa parsing format YYYY-MM-DD secara mutlak tanpa terpengaruh Zona Waktu
-        let parts = dStr.split('-');
-        if (parts.length === 3) {
-            baseDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else {
-            baseDate = new Date(dStr);
+        // Ekstrak angka saja (Tahan banting terhadap format YYYY-MM-DD maupun DD-MM-YYYY)
+        let matches = String(dStr).match(/\d+/g);
+        if (matches && matches.length >= 3) {
+            let y = 0, m = 0, d = 0;
+            if (matches[0].length === 4) { 
+                y = parseInt(matches[0]); m = parseInt(matches[1]) - 1; d = parseInt(matches[2]);
+            } else if (matches[2].length === 4) { 
+                d = parseInt(matches[0]); m = parseInt(matches[1]) - 1; y = parseInt(matches[2]);
+            }
+            
+            // JIKA TAHUN MASUK AKAL (Bukan 2001) -> Gunakan Tanggal Ini
+            if (y >= 2024) {
+                baseDate = new Date(y, m, d);
+            }
         }
-    } else {
-        // Jika data config kosong, baru hitung manual dari hari ini
+    }
+
+    // JIKA GAGAL (Memori Kosong / Tahun 2001) -> Paksa gunakan hari ini + index
+    if (!baseDate || isNaN(baseDate.getTime())) {
+        baseDate = new Date();
         baseDate.setDate(baseDate.getDate() + dayIndex);
     }
 
@@ -223,12 +228,16 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             <title>Laporan Komprehensif IBF - ${namaWilayah}</title>
             <style>
                 body { font-family: 'Times New Roman', Times, serif; color: #000; margin: 0; padding: 40px; background: #fff; }
-                .kop-surat { display: flex; align-items: center; border-bottom: 4px double #000; padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
-                .logo { width: 80px; height: auto; position: absolute; left: 40px; }
-                .kop-text { flex: 1; }
-                .kop-text h2 { margin: 0; font-size: 16px; text-transform: uppercase; }
-                .kop-text h1 { margin: 5px 0; font-size: 20px; font-weight: bold; }
-                .kop-text p { margin: 0; font-size: 13px; }
+                
+                /* Layout Kop Surat Full Gambar */
+                .kop-surat-img { 
+                    width: 100%; 
+                    max-width: 100%; 
+                    height: auto; 
+                    display: block; 
+                    margin: 0 auto 25px auto;
+                }
+                
                 .doc-title { text-align: center; margin-bottom: 30px; }
                 .doc-title h3 { margin: 0; font-size: 16px; text-decoration: underline; text-transform: uppercase; }
                 .meta-box { margin-bottom: 25px; font-size: 14px; line-height: 1.8; }
@@ -237,22 +246,17 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
                 th { background: #f1f5f9; color: #000; padding: 12px 10px; border: 1px solid #000; text-transform: uppercase; font-weight: bold;}
                 .footer-sign { margin-top: 50px; float: right; text-align: center; font-size: 14px; }
                 .footer-sign .space { height: 70px; }
+                
                 @media print { 
-                    body { padding: 20px; } 
+                    body { padding: 15px; } 
                     th { background-color: #e2e8f0 !important; -webkit-print-color-adjust: exact; color-adjust: exact; } 
                     td span { -webkit-print-color-adjust: exact; color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
-            <div class="kop-surat">
-                <img src="assets/logo.png" class="logo" alt="Logo BMKG" onerror="this.style.display='none'">
-                <div class="kop-text">
-                    <h2>BADAN METEOROLOGI, KLIMATOLOGI, DAN GEOFISIKA</h2>
-                    <h1>BALAI BESAR MKG WILAYAH IV - MAKASSAR</h1>
-                    <p>Sistem Operasional Impact-Based Forecasting (IBF) WebGIS</p>
-                </div>
-            </div>
+            <!-- KOP SURAT GAMBAR PENUH -->
+            <img src="assets/KOPSURAT.png" class="kop-surat-img" alt="Kop Surat BMKG" onerror="this.style.display='none'; alert('Gambar KOPSURAT.png tidak ditemukan di folder assets!');">
 
             <div class="doc-title">
                 <h3>LAPORAN KOMPREHENSIF POTENSI BAHAYA & RISIKO WILAYAH</h3>
@@ -286,7 +290,8 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
 
             <script>
                 window.onload = function() { 
-                    setTimeout(() => window.print(), 500); 
+                    // Menunggu gambar loading sempurna sebelum jendela print dipicu
+                    setTimeout(() => window.print(), 800); 
                 };
             </script>
         </body>

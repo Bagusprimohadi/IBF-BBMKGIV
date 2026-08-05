@@ -90,3 +90,27 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log("✅ IBF WebGIS V1.1 Berhasil Dimuat dan Siap Digunakan.");
     }, 800);
 });
+
+// ==========================================
+// TAMBAHAN BARU: FUNGSI TOGGLE PANEL MOBILE
+// ==========================================
+
+/**
+ * Membuka atau menutup (minimize) panel kontrol di layar HP
+ */
+function toggleMobilePanel() {
+    const panel = document.getElementById('mobilePanel');
+    if (panel) {
+        panel.classList.toggle('collapsed');
+    }
+}
+
+// Otomatis minimalkan panel jika dibuka lewat HP (layar <= 767px)
+document.addEventListener("DOMContentLoaded", function () {
+    if (window.innerWidth <= 767) {
+        const panel = document.getElementById('mobilePanel');
+        if (panel) {
+            panel.classList.add('collapsed');
+        }
+    }
+});

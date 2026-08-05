@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"date": "2026-08-09", "category_id": 1, "level": "waspada", "kategori": "Waspada Potensi Longsor", "color": "#FFFF00"}, "geometry": {"type": "Polygon", "coordinates": [[[95.00000000000001, 7.000000000000001], [95.00000000000001, -11.000000000002814], [140.99999999995816, -11.000000000002814], [140.99999999995816, 7.000000000000001], [95.00000000000001, 7.000000000000001]]]}}]}
+{"type": "FeatureCollection", "features": []}

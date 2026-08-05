@@ -1,5 +1,5 @@
 // ==========================================
-// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.5 (PRECISION POPUP FIX)
+// MAP.JS - INISIALISASI PETA UTAMA LEAFLET V1.6 (CUSTOM PANE BOUNDARIES)
 // ==========================================
 
 // Variabel Global Instance Peta
@@ -17,19 +17,25 @@ function initMap() {
 
     // Inisialisasi Peta
     map = L.map('map', {
-        center: CONFIG.map.defaultCenter || [-1.75, 100.25],
+        center: CONFIG.map.defaultCenter || [-1.75, 125.25],
         zoom: CONFIG.map.defaultZoom || 5,
         minZoom: 4,
         maxZoom: 12,
         zoomControl: false 
     });
 
+    // 1. BUAT CUSTOM PANE KHUSUS UNTUK GARIS ADMINISTRASI
+    // Z-Index 650 menempatkannya di atas overlay data hazard (z-index default: 400)
+    map.createPane('adminBoundariesPane');
+    map.getPane('adminBoundariesPane').style.zIndex = 650;
+    map.getPane('adminBoundariesPane').style.pointerEvents = 'none'; // Klik tembus 100% ke hazard di bawah
+
     // Tombol Zoom di Sudut Kanan Bawah
     L.control.zoom({
         position: 'bottomright'
     }).addTo(map);
 
-    // Event Klik Global pada Peta (Hanya terpicu jika menglik area KOSONG / NON-HAZARD)
+    // Event Klik Global pada Peta (Terpicu jika mengklik area KOSONG / NON-HAZARD)
     map.on('click', function (e) {
         if (typeof generateGlobalPopup === 'function') {
             generateGlobalPopup(e, null);
@@ -46,8 +52,7 @@ function initMap() {
 
 /**
  * Memuat batas administrasi (Provinsi & Kabupaten)
- * Dibuat interactive: false agar TIDAK MEMBLOKIR klik ke layer hazard di bawahnya,
- * tetapi garis batas hitam v1.0 tetap dipaksa di depan (bringToFront) agar terlihat jelas.
+ * Menggunakan adminBoundariesPane agar selalu berada di paling atas tanpa menghalangi klik pop-up hazard.
  */
 function loadAdminBoundaries() {
     if (!map) return;
@@ -61,12 +66,12 @@ function loadAdminBoundaries() {
             })
             .then(data => {
                 kabupatenLayer = L.geoJSON(data, {
+                    pane: 'adminBoundariesPane', // Masukkan ke Pane khusus paling atas
                     style: {
-                        color: "#rgba(100, 116, 139, 0.4)",        // Garis hitam murni v1.0
+                        color: "rgba(100, 116, 139, 0.4)",        // Garis hitam murni v1.0
                         weight: 0.8,             // Ketebalan 0.8px
                         fillColor: "transparent",
-                        fillOpacity: 0,
-                        interactive: false       // KUNCI: Biarkan klik tembus ke poligon hazard di bawahnya secara presisi
+                        fillOpacity: 0
                     },
                     onEachFeature: function (feature, layer) {
                         let props = feature.properties || {};
@@ -80,8 +85,6 @@ function loadAdminBoundaries() {
                         }
                     }
                 }).addTo(map);
-
-                if (kabupatenLayer) kabupatenLayer.bringToFront();
             })
             .catch(err => console.warn("Peringatan Admin Kabupaten:", err.message));
     }
@@ -95,16 +98,14 @@ function loadAdminBoundaries() {
             })
             .then(data => {
                 provinsiLayer = L.geoJSON(data, {
+                    pane: 'adminBoundariesPane', // Masukkan ke Pane khusus paling atas
                     style: {
                         color: "#0284c7",        // Garis hitam murni v1.0
-                        weight: 2.0,             // Ketebalan 2.0px
+                        weight: 2.0,             // Ketebalan 2.0px (lebih tebal)
                         fillColor: "transparent",
-                        fillOpacity: 0,
-                        interactive: false       // Non-interaktif agar tidak memblokir klik
+                        fillOpacity: 0
                     }
                 }).addTo(map);
-
-                if (provinsiLayer) provinsiLayer.bringToFront();
             })
             .catch(err => console.warn("Peringatan Admin Provinsi:", err.message));
     }

@@ -124,3 +124,13 @@ body, html {
     } 
 }
 
+/* --- PAKSA VISIBILITAS GARIS ADMINISTRASI & TEMBUS KLIK --- */
+.leaflet-pane.leaflet-adminBoundariesPane-pane {
+    pointer-events: none !important;
+}
+
+.leaflet-pane.leaflet-adminBoundariesPane-pane svg path {
+    pointer-events: none !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}

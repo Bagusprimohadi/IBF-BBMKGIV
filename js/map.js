@@ -39,77 +39,66 @@ function initMap() {
  * Memuat batas administrasi (Provinsi & Kabupaten) dari folder data/admin/
  * Bertindak sebagai Base Interactive Layer untuk area non-hazard (Aman/Normal)
  */
+// ==========================================
+// KODE UPDATE PADA js/map.js
+// ==========================================
+
 function loadAdminBoundaries() {
     if (!map) return;
 
-    // 1. Muat Batas Kabupaten / Kota (Interactive Base Layer)
+    // 1. Muat Batas Kabupaten / Kota (Garis Hitam v1.0)
     if (CONFIG.paths && CONFIG.paths.adminKabupaten) {
         fetch(CONFIG.paths.adminKabupaten)
-            .then(res => {
-                if (!res.ok) throw new Error("File admin kabupaten tidak ditemukan");
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 kabupatenLayer = L.geoJSON(data, {
                     style: {
-                        color: "rgba(100, 116, 139, 0.4)", // Garis batas tipis abu-abu
-                        weight: 0.8,
-                        fillColor: "#ffffff",
-                        fillOpacity: 0.001 // Transparan visual tetapi aktif menangkap klik kursor
+                        color: "rgba(100, 116, 139, 0.4)",       // Hitam tegas murni sesuai v1.0
+                        weight: 0.8,            // Ketebalan garis 0.8px
+                        fillColor: "transparent",
+                        fillOpacity: 0
                     },
                     onEachFeature: function (feature, layer) {
                         let props = feature.properties || {};
-                        let namaWilayah = props.WADMKK || props.kabupaten || props.KABUPATEN || props.NAME_2 || props.NAME || "Wilayah";
+                        let namaWilayah = props.WADMKK || props.kabupaten || props.KABUPATEN || props.NAME_2 || "Wilayah";
 
-                        // Tooltip nama wilayah saat kursor melintas
                         if (namaWilayah) {
-                            layer.bindTooltip(namaWilayah, {
-                                sticky: true,
-                                className: 'map-tooltip'
-                            });
+                            layer.bindTooltip(namaWilayah, { sticky: true, className: 'map-tooltip' });
                         }
 
-                        // Event klik di area manapun (termasuk zona Aman / Tanpa Peringatan)
                         layer.on('click', function (e) {
-                            // Hentikan penumpukan klik jika mengeklik poligon hazard di atasnya
                             L.DomEvent.stopPropagation(e);
-
-                            // Utamakan panggil fungsi pemicu popup global
                             if (typeof generateGlobalPopup === 'function') {
                                 generateGlobalPopup(e, feature);
-                            } else if (typeof window.handleMapClick === 'function') {
-                                window.handleMapClick(e, feature);
                             }
                         });
                     }
                 }).addTo(map);
 
-                // Pastikan layer kabupaten berada paling bawah dari layer hazard
-                kabupatenLayer.bringToBack();
+                // Paksa batas kabupaten selalu di depan
+                if (kabupatenLayer) kabupatenLayer.bringToFront();
             })
-            .catch(err => console.warn("Peringatan Admin Kabupaten:", err.message));
+            .catch(err => console.warn("Admin Kabupaten:", err.message));
     }
 
-    // 2. Muat Batas Provinsi (Overlay Lines Only)
+    // 2. Muat Batas Provinsi (Garis Hitam Tebal v1.0)
     if (CONFIG.paths && CONFIG.paths.adminProvinsi) {
         fetch(CONFIG.paths.adminProvinsi)
-            .then(res => {
-                if (!res.ok) throw new Error("File admin provinsi tidak ditemukan");
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 provinsiLayer = L.geoJSON(data, {
                     style: {
-                        color: "#0284c7", // Warna garis biru operasional
-                        weight: 1.6,
+                        color: "#0284c7",       // Biru 
+                        weight: 2.0,            // Ketebalan garis 2.0px (lebih tebal)
                         fillColor: "transparent",
                         fillOpacity: 0,
-                        interactive: false // Mencegah pemblokiran klik ke layer bawahnya
+                        interactive: false
                     }
                 }).addTo(map);
 
-                provinsiLayer.bringToFront();
+                // Paksa batas provinsi selalu di paling depan
+                if (provinsiLayer) provinsiLayer.bringToFront();
             })
-            .catch(err => console.warn("Peringatan Admin Provinsi:", err.message));
+            .catch(err => console.warn("Admin Provinsi:", err.message));
     }
 }

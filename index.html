@@ -18,7 +18,7 @@
     <!-- Kontainer Peta Utama (Wajib Paling Belakang) -->
     <div id="map"></div>
 
-    <!-- 1. Header Utama (Terkunci di Tengah Atas Secara Mandiri) -->
+    <!-- 1. Header Utama -->
     <div class="map-header">
         <h3 id="systemSubtitle">Memuat sistem...</h3>
         <h1 id="hazardTitle">Prediksi Risiko Dampak Wilayah BBMKG IV</h1>
@@ -75,47 +75,52 @@
         </div>
     </div>
 
-    <!-- 4. Kotak Kontrol Kiri Bawah (Navigasi Waktu + Transparansi + Legenda + Watermark) -->
-    <div class="control-box left-bottom-panel">
-        <!-- Navigasi Waktu Prediksi -->
-        <h4>Navigasi Waktu Prediksi</h4>
-        <div class="time-controls">
-            <div class="button-group" id="dayButtonsContainer"></div>
-            <div class="nav-playback-group">
-                <button class="action-btn" onclick="prevStep()">&laquo; Prev</button>
-                <button class="action-btn" id="playBtn" onclick="togglePlay()">&#9658; Play</button>
-                <button class="action-btn" onclick="nextStep()">Next &raquo;</button>
+    <!-- 4. Kotak Kontrol Kiri Bawah (Mendukung Collapsible Panel) -->
+    <div class="control-box left-bottom-panel" id="mobilePanel">
+        <!-- Header Mobile dengan Tombol Toggle -->
+        <div class="panel-header-mobile" onclick="toggleMobilePanel()">
+            <h4>Navigasi & Control Panel</h4>
+            <button id="togglePanelBtn" class="btn-toggle-panel" aria-label="Toggle Panel">▼</button>
+        </div>
+
+        <!-- Isi Konten Panel -->
+        <div class="panel-body-content" id="panelBody">
+            <!-- Navigasi Waktu Prediksi -->
+            <h4>Navigasi Waktu Prediksi</h4>
+            <div class="time-controls">
+                <div class="button-group" id="dayButtonsContainer"></div>
+                <div class="nav-playback-group">
+                    <button class="action-btn" onclick="prevStep()">&laquo; Prev</button>
+                    <button class="action-btn" id="playBtn" onclick="togglePlay()">&#9658; Play</button>
+                    <button class="action-btn" onclick="nextStep()">Next &raquo;</button>
+                </div>
             </div>
+
+            <hr class="panel-divider">
+
+            <!-- Slider Transparansi Peta -->
+            <div class="opacity-control">
+                <label for="opacityRange">
+                    Transparansi Peta: <span id="opacityVal">65%</span>
+                </label>
+                <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.65" oninput="updateOpacity(this.value)">
+            </div>
+
+            <hr class="panel-divider">
+
+            <!-- Legenda Peringatan -->
+            <h4>Legenda Peringatan</h4>
+            <div id="legendBox" class="legend-container"></div>
+
+            <!-- Watermark Pengembang -->
+            <div class="dev-watermark">Pengembang: Bagus Primohadi - BBMKG IV</div>
         </div>
-
-        <hr class="panel-divider">
-
-        <!-- Slider Transparansi Peta -->
-        <div class="opacity-control">
-            <label for="opacityRange">
-                Transparansi Peta: <span id="opacityVal">65%</span>
-            </label>
-            <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.65" oninput="updateOpacity(this.value)">
-        </div>
-
-        <hr class="panel-divider">
-
-        <!-- Legenda Peringatan -->
-        <h4>Legenda Peringatan</h4>
-        <div id="legendBox" class="legend-container"></div>
-
-        <!-- Watermark Pengembang -->
-        <div class="dev-watermark">Pengembang: Bagus Primohadi - BBMKG IV</div>
     </div>
 
-    <!-- ==========================================
-         LEAFLET JS (CORE LIBRARY)
-         ========================================== -->
+    <!-- LEAFLET JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- ==========================================
-         MODUL JAVASCRIPT V1.1 (PURE GEOJSON WEBGIS)
-         ========================================== -->
+    <!-- MODUL JAVASCRIPT V1.1 -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/map.js"></script>

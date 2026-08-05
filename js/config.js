@@ -5,8 +5,8 @@
 
 const CONFIG = {
     map: {
-        defaultZoom: 10,
-        defaultCenter: [-1.75, 100.25],
+        defaultZoom: 7,
+        defaultCenter: [-1.75, 120.25],
         defaultBounds: [[-8.505, 114.995], [5.005, 135.505]]
     },
 

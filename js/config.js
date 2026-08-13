@@ -16,9 +16,97 @@ const CONFIG = {
         manifest: "data/manifest.json"
     },
 
-    // Definisi Produk Berdasarkan Kategori (Hazard & Risiko)
+    // Definisi Produk Berdasarkan Kategori (Harian, Hazard, & Risiko)
     products: {
-        // --- KATEGORI HAZARD (POTENSI BAHAYA) ---
+        // --- KATEGORI 1: INFO CUACA / LAUT HARIAN BIASA (FITUR 1 - KONTINU) ---
+        harian: {
+            "swh": {
+                name: "Tinggi Gelombang",
+                folder: "data/raw/swh/",
+                subtitle: "Prakiraan Tinggi Gelombang Signifikan Harian",
+                title: "Informasi Tinggi Gelombang Laut Indonesia",
+                prefix: "swh_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "continuous",
+                unit: "m",
+                min: 0.0,
+                max: 4.0,
+                colorRamp: ["#0000ff", "#00ffff", "#00ff00", "#ffff00", "#ff0000"] // Biru -> Sian -> Hijau -> Kuning -> Merah
+            },
+            "wind_max": {
+                name: "Kecepatan Angin Maksimum",
+                folder: "data/raw/wind_max/",
+                subtitle: "Prakiraan Kecepatan Angin Maksimum Harian",
+                title: "Informasi Kecepatan Angin Maksimum Indonesia",
+                prefix: "wind_max_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "continuous",
+                unit: "knots",
+                min: 0.0,
+                max: 35.0,
+                colorRamp: ["#e0f2fe", "#38bdf8", "#0284c7", "#1e3a8a", "#7e22ce"] // Gradasi Angin Cerah ke Kencang
+            },
+            "tp_sum": {
+                name: "Akumulasi Curah Hujan",
+                folder: "data/raw/tp_sum/",
+                subtitle: "Prakiraan Akumulasi Curah Hujan 24 Jam",
+                title: "Informasi Akumulasi Curah Hujan Indonesia",
+                prefix: "tp_sum_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "continuous",
+                unit: "mm",
+                min: 0.0,
+                max: 100.0,
+                colorRamp: ["#ffffff", "#86efac", "#22c55e", "#eab308", "#ef4444", "#a855f7"] // Putih -> Hijau -> Kuning -> Merah -> Ungu
+            },
+            "current_speed_max": {
+                name: "Kecepatan Arus Permukaan",
+                folder: "data/raw/current_speed_max/",
+                subtitle: "Prakiraan Kecepatan Arus Laut Permukaan",
+                title: "Informasi Kecepatan Arus Permukaan Laut Indonesia",
+                prefix: "current_speed_max_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "continuous",
+                unit: "m/s",
+                min: 0.0,
+                max: 1.5,
+                colorRamp: ["#f0fdf4", "#4ade80", "#0ea5e9", "#2563eb", "#1e1b4b"] // Hijau Muda -> Biru -> Biru Tua
+            },
+            "tmax": {
+                name: "Suhu Udara Maksimum",
+                folder: "data/raw/tmax/",
+                subtitle: "Prakiraan Suhu Udara Maksimum Harian",
+                title: "Informasi Suhu Udara Maksimum Indonesia",
+                prefix: "tmax_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "continuous",
+                unit: "°C",
+                min: 20.0,
+                max: 38.0,
+                colorRamp: ["#fef08a", "#f97316", "#dc2626", "#7f1d1d"] // Kuning -> Orange -> Merah -> Merah Gelap
+            },
+            "tmin": {
+                name: "Suhu Udara Minimum",
+                folder: "data/raw/tmin/",
+                subtitle: "Prakiraan Suhu Udara Minimum Harian",
+                title: "Informasi Suhu Udara Minimum Indonesia",
+                prefix: "tmin_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "continuous",
+                unit: "°C",
+                min: 16.0,
+                max: 28.0,
+                colorRamp: ["#38bdf8", "#818cf8", "#a855f7", "#e11d48"] // Biru Muda -> Nila -> Ungu -> Merah Muda
+            }
+        },
+
+        // --- KATEGORI 2: HAZARD (POTENSI BAHAYA) ---
         hazard: {
             "angin": {
                 name: "Angin Kencang",
@@ -27,7 +115,8 @@ const CONFIG = {
                 title: "Prediksi Bahaya Angin Kencang Indonesia",
                 prefix: "angin_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "#E0B0FF", label: "Waspada Dampak Angin Cuaca Badai", level: "waspada_badai" },
                     { color: "#BA55D3", label: "Siaga Dampak Angin Cuaca Badai", level: "siaga_badai" },
@@ -47,7 +136,8 @@ const CONFIG = {
                 title: "Prediksi Potensi Bahaya Banjir Indonesia",
                 prefix: "banjir_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "transparent", label: "Aman / Normal", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Potensi Banjir", level: "waspada" },
@@ -62,7 +152,8 @@ const CONFIG = {
                 title: "Prediksi Potensi Bahaya Longsor Indonesia",
                 prefix: "longsor_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "transparent", label: "Aman / Normal", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Potensi Longsor", level: "waspada" },
@@ -77,7 +168,8 @@ const CONFIG = {
                 title: "Prediksi Potensi Udara Panas HeatStress Indonesia",
                 prefix: "suhu_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "transparent", label: "Nyaman / Tidak Ada Potensi", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Udara Panas", level: "waspada" },
@@ -92,7 +184,8 @@ const CONFIG = {
                 title: "Prediksi Kondisi Keamanan Snorkling Indonesia",
                 prefix: "snorkling_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "#00FF00", label: "Aman untuk Snorkling", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Aktivitas Snorkling", level: "waspada" },
@@ -107,7 +200,8 @@ const CONFIG = {
                 title: "Prediksi Kondisi Keamanan Diving Indonesia",
                 prefix: "diving_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "#00FF00", label: "Aman untuk Diving", level: "normal" },
                     { color: "#FFFF00", label: "Waspada Aktivitas Diving", level: "waspada" },
@@ -117,7 +211,7 @@ const CONFIG = {
             }
         },
 
-        // --- KATEGORI RISIKO (DAMPAK RISIKO BENCANA) ---
+        // --- KATEGORI 3: RISIKO (DAMPAK RISIKO BENCANA) ---
         risiko: {
             "risiko_banjir": {
                 name: "Risiko Dampak Banjir",
@@ -126,7 +220,8 @@ const CONFIG = {
                 title: "Prediksi Risiko Dampak Banjir Indonesia",
                 prefix: "risiko_banjir_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "transparent", label: "Tidak Ada Risiko", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Rendah (Waspada)", level: "waspada" },
@@ -141,7 +236,8 @@ const CONFIG = {
                 title: "Prediksi Risiko Dampak Longsor Indonesia",
                 prefix: "risiko_longsor_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "transparent", label: "Tidak Ada Risiko", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Rendah (Waspada)", level: "waspada" },
@@ -156,7 +252,8 @@ const CONFIG = {
                 title: "Prediksi Risiko Keamanan Snorkling Indonesia",
                 prefix: "risiko_snorkling_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "#00FF00", label: "Tidak Ada Risiko", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Rendah", level: "waspada" },
@@ -171,7 +268,8 @@ const CONFIG = {
                 title: "Prediksi Risiko Keamanan Diving Indonesia",
                 prefix: "risiko_diving_day_",
                 extension: ".geojson",
-                days: 7, // Diperbarui menjadi 7 hari (H0 s/d H+6)
+                days: 7,
+                type: "categorical",
                 legends: [
                     { color: "#00FF00", label: "Tidak Ada Risiko", level: "normal" },
                     { color: "#FFFF00", label: "Risiko Rendah", level: "waspada" },

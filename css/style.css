@@ -114,14 +114,14 @@ body, html {
 }
 
 /* ========================================== */
-/* STYLING FITUR 2 & 3 (KANAN BAWAH, MODAL & HOTLINE) */
+/* STYLING FITUR 2 & 3 (MODAL & HOTLINE BUTTON) */
 /* ========================================== */
 
-/* Kontainer Melayang Kanan Bawah */
+/* Kontainer Melayang Kanan Bawah (Laptop/Desktop) */
 .bottom-right-controls {
     position: fixed;
-    bottom: 24px;
-    right: 20px;
+    bottom: 60px; /* Dinaikkan agar bebas dari kontrol Zoom & Attribution Leaflet */
+    right: 15px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -131,11 +131,11 @@ body, html {
 
 /* Base Styling Tombol Aksi Custom */
 .action-btn-custom {
-    padding: 10px 16px;
+    padding: 9px 14px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     font-family: 'Inter', sans-serif;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -146,8 +146,8 @@ body, html {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    min-width: 140px;
+    gap: 6px;
+    min-width: 130px;
 }
 
 .action-btn-custom:hover {
@@ -171,6 +171,11 @@ body, html {
 
 .btn-hotline:hover {
     background-color: #15803d !important;
+}
+
+/* Menjaga Attribution Leaflet Tetap Aman di Bawah Tombol */
+.leaflet-bottom.leaflet-right {
+    margin-bottom: 5px;
 }
 
 /* Modal Backdrop (Latar Belakang Buram) */
@@ -334,15 +339,19 @@ body, html {
         display: none; 
     } 
 
+    /* Pindahkan tombol ke kanan atas di bawah header agar bawah bersih untuk panel waktu */
     .bottom-right-controls {
-        bottom: 16px;
+        top: 75px;
+        bottom: auto;
         right: 12px;
+        flex-direction: row; /* Berjajar kesamping untuk menghemat ruang */
         gap: 6px;
     }
 
     .action-btn-custom {
-        padding: 8px 12px;
+        padding: 6px 10px;
         font-size: 11px;
-        min-width: 110px;
+        min-width: auto;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 }

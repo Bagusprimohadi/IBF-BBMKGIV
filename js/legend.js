@@ -1,11 +1,12 @@
 // ==========================================
-// LEGEND.JS - PENGATUR KOTAK LEGENDA DINAMIS & COLLAPSIBLE V1.2
-// - Support Kategori Kategorikal & Gradasi Kontinu (Fitur 1)
+// LEGEND.JS - PENGATUR KOTAK LEGENDA DINAMIS & COLLAPSIBLE V1.2.3
+// - Support Dual PNG Overlay Class Intervals (BMKG Standard Palette)
+// - Support Categorical Legend (Hazard & Risiko)
 // - Support Dynamic Time-Range Tagging (H-1 to H+5 vs H0 to H+6)
 // ==========================================
 
 /**
- * Merender daftar legenda berdasarkan konfigurasi produk aktif (Kategorikal atau Kontinu)
+ * Merender daftar legenda berdasarkan konfigurasi produk aktif
  * @param {Object} productConfig - Konfigurasi produk dari CONFIG.products
  */
 function renderLegend(productConfig) {
@@ -19,8 +20,8 @@ function renderLegend(productConfig) {
         return;
     }
 
-    // Cek apakah produk aktif berjenis kontinu (Fitur 1) atau kategorikal
-    const isContinuous = productConfig.type === 'continuous';
+    // Cek jenis layer (image_overlay untuk harian, categorical untuk hazard/risiko)
+    const isImageOverlay = productConfig.type === 'image_overlay' || productConfig.type === 'continuous';
 
     // Cek apakah produk aktif termasuk dalam 4 parameter khusus (Banjir & Longsor)
     let prodKey = typeof currentProductKey !== 'undefined' ? currentProductKey : '';
@@ -38,40 +39,76 @@ function renderLegend(productConfig) {
     `;
     legendBox.appendChild(headerDiv);
 
-    // --- RENDER LEGENDA KONTINU (FITUR 1) ---
-    if (isContinuous) {
-        let ramp = productConfig.colorRamp || ["#0000ff", "#00ffff", "#00ff00", "#ffff00", "#ff0000"];
-        let minVal = productConfig.min !== undefined ? productConfig.min : 0;
-        let maxVal = productConfig.max !== undefined ? productConfig.max : 100;
+    // --- RENDER LEGENDA INTERVAL BMKG (FITUR 1: DUAL PNG OVERLAY) ---
+    if (isImageOverlay) {
+        let colorRamp = productConfig.colorRamp || ["#87CEEB", "#FFFF00", "#FFA500", "#FF0000", "#800080"];
+        let labels = productConfig.labels || [];
+        let levels = productConfig.levels || [];
         let unit = productConfig.unit || '';
 
-        // Buat kontainer color bar gradasi
-        let continuousContainer = document.createElement('div');
-        continuousContainer.style.cssText = 'margin-top: 6px; padding: 4px 0;';
-
-        // Bar Gradasi CSS Linear Gradient
-        let colorBar = document.createElement('div');
-        colorBar.style.cssText = `
+        // 1. Tampilkan Bar Gradasi Visual di Atas
+        let gradientBar = document.createElement('div');
+        gradientBar.style.cssText = `
             width: 100%;
-            height: 14px;
-            border-radius: 4px;
-            background: linear-gradient(to right, ${ramp.join(', ')});
+            height: 10px;
+            border-radius: 3px;
+            background: linear-gradient(to right, ${colorRamp.join(', ')});
             border: 1px solid #cbd5e1;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         `;
+        legendBox.appendChild(gradientBar);
 
-        // Label Min & Max di bawah bar
-        let labelsRow = document.createElement('div');
-        labelsRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: #475569;';
-        labelsRow.innerHTML = `
-            <span>${minVal} ${unit}</span>
-            <span style="color: #0284c7; text-transform: uppercase;">Rentang Nilai</span>
-            <span>${maxVal} ${unit}</span>
-        `;
+        // 2. Tampilkan Daftar Kotak Warna & Rentang Kelas
+        let intervalContainer = document.createElement('div');
+        intervalContainer.className = 'legend-interval-list';
 
-        continuousContainer.appendChild(colorBar);
-        continuousContainer.appendChild(labelsRow);
-        legendBox.appendChild(continuousContainer);
+        // Jika array labels tersedia di config
+        if (labels.length > 0) {
+            labels.forEach((labelStr, idx) => {
+                let colorHex = colorRamp[idx] || '#cbd5e1';
+
+                let itemDiv = document.createElement('div');
+                itemDiv.className = 'legend-item';
+                itemDiv.style.cssText = 'display: flex; align-items: center; margin-bottom: 4px; font-size: 11px;';
+
+                let colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.cssText = `width: 14px; height: 14px; border-radius: 2px; background-color: ${colorHex}; border: 1px solid rgba(0,0,0,0.15); margin-right: 8px; flex-shrink: 0;`;
+
+                let labelSpan = document.createElement('span');
+                labelSpan.style.color = '#334155';
+                labelSpan.innerText = labelStr;
+
+                itemDiv.appendChild(colorBox);
+                itemDiv.appendChild(labelSpan);
+                intervalContainer.appendChild(itemDiv);
+            });
+        } else if (levels.length > 1) {
+            // Fallback otomatis jika labels tidak ditulis eksplisit
+            for (let i = 0; i < levels.length - 1; i++) {
+                let colorHex = colorRamp[i] || '#cbd5e1';
+                let minLvl = levels[i];
+                let maxLvl = levels[i + 1];
+
+                let itemDiv = document.createElement('div');
+                itemDiv.className = 'legend-item';
+                itemDiv.style.cssText = 'display: flex; align-items: center; margin-bottom: 4px; font-size: 11px;';
+
+                let colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.cssText = `width: 14px; height: 14px; border-radius: 2px; background-color: ${colorHex}; border: 1px solid rgba(0,0,0,0.15); margin-right: 8px; flex-shrink: 0;`;
+
+                let labelSpan = document.createElement('span');
+                labelSpan.style.color = '#334155';
+                labelSpan.innerText = `${minLvl} - ${maxLvl} ${unit}`;
+
+                itemDiv.appendChild(colorBox);
+                itemDiv.appendChild(labelSpan);
+                intervalContainer.appendChild(itemDiv);
+            }
+        }
+
+        legendBox.appendChild(intervalContainer);
         return;
     }
 

@@ -1,14 +1,13 @@
 // ==========================================
-// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2.3
-// - Supporting Dual Image Overlay (Shaded & Contour) + JSON Metadata
-// - Supporting Categorical GeoJSON Vector Layers
-// - FIX: Menggunakan 'var' untuk mencegah bentrok "already been declared"
+// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2.4
+// - Mempertahankan kompatibilitas struktur V1.1
+// - Menggunakan var agar kebal dari deklarasi ganda di file lain
 // ==========================================
 
-// Variable State Global Aplikasi (Menggunakan 'var' agar tidak crash jika script termuat 2x)
-var currentCategory = 'hazard';
-var currentProductKey = 'angin';
-var currentDayIndex = 0;
+// Variable State Global Aplikasi (Kebal Bentrok)
+var currentCategory = typeof currentCategory !== 'undefined' ? currentCategory : 'hazard';
+var currentProductKey = typeof currentProductKey !== 'undefined' ? currentProductKey : 'angin';
+var currentDayIndex = typeof currentDayIndex !== 'undefined' ? currentDayIndex : 0;
 
 // Layer Active Handlers
 var currentGeoJsonLayer = null;      // Untuk Layer Vektor GeoJSON (Hazard / Risiko)
@@ -17,30 +16,20 @@ var currentContourOverlay = null;    // Untuk PNG Contour Overlay (Harian)
 var currentOverlayGroup = null;      // Group Container Dual PNG Overlay
 
 // ==========================================
-// FUNGSI KONTROL UI GLOBAL & DROPDOWN
+// FUNGSI KONTROL UI GLOBAL
 // ==========================================
 
-/**
- * Fungsi untuk membuka/menutup dropdown menu
- * @param {string} id - ID dari container dropdown
- */
 function toggleDropdown(id) {
     const dropdown = document.getElementById(id);
     if (dropdown) {
-        // 1. Tutup semua dropdown lain yang sedang terbuka agar tidak bertumpuk
         const allDropdowns = document.querySelectorAll('.dropdown-wrapper');
         allDropdowns.forEach(dw => {
             if (dw.id !== id) dw.classList.remove('active');
         });
-        
-        // 2. Buka/tutup dropdown yang sedang diklik
         dropdown.classList.toggle('active');
     }
 }
 
-/**
- * Tutup semua menu dropdown yang terbuka
- */
 function closeAllDropdowns() {
     const dropdowns = document.querySelectorAll('.dropdown-wrapper');
     dropdowns.forEach(dropdown => {
@@ -48,16 +37,12 @@ function closeAllDropdowns() {
     });
 }
 
-// Event Global: Menutup menu dropdown saat pengguna mengklik area luar menu / peta
 window.addEventListener('click', function (e) {
     if (!e.target.matches('.dropdown-btn') && !e.target.closest('.dropdown-btn')) {
         closeAllDropdowns();
     }
 });
 
-/**
- * Membuka atau menutup (minimize) panel kontrol di layar HP
- */
 function toggleMobilePanel() {
     const panel = document.getElementById('mobilePanel');
     if (panel) {
@@ -69,11 +54,6 @@ function toggleMobilePanel() {
 // MANAGEMENT SWITCH PRODUCT & LOAD DATA
 // ==========================================
 
-/**
- * Mengganti produk aktif (Harian, Hazard, atau Risiko)
- * @param {string} category - 'harian' | 'hazard' | 'risiko'
- * @param {string} productKey - Kunci produk (contoh: 'swh', 'wind_mean', 'angin')
- */
 function switchProduct(category, productKey) {
     closeAllDropdowns();
 
@@ -87,41 +67,23 @@ function switchProduct(category, productKey) {
 
     const productCfg = CONFIG.products[category][productKey];
 
-    // Update Judul & Subtitle Header
-    updateHeaderInfo(productCfg.title, productCfg.subtitle);
+    if (typeof updateHeaderInfo === 'function') updateHeaderInfo(productCfg.title, productCfg.subtitle);
+    if (typeof renderDayButtons === 'function') renderDayButtons(productCfg.days || 7);
+    if (typeof renderLegend === 'function') renderLegend(productCfg);
 
-    // Render Ulang Tombol Hari (H0 s/d H+6)
-    if (typeof renderDayButtons === 'function') {
-        renderDayButtons(productCfg.days || 7);
-    }
-
-    // Render Legenda (Kategorikal / Kontinu)
-    if (typeof renderLegend === 'function') {
-        renderLegend(productCfg);
-    }
-
-    // Load Data Peta untuk Hari Saat Ini
     loadProductData(currentDayIndex);
 
-    // Update URL State jika modul tersedia
     if (typeof UrlState !== 'undefined' && typeof UrlState.updateUrl === 'function') {
         UrlState.updateUrl(category, productKey, currentDayIndex);
     }
 }
 
-/**
- * Membersihkan seluruh layer aktif dari peta sebelum memuat data baru
- */
 function clearAllMapLayers() {
     if (!window.map) return;
-
-    // Hapus GeoJSON Vector Layer
     if (currentGeoJsonLayer) {
         window.map.removeLayer(currentGeoJsonLayer);
         currentGeoJsonLayer = null;
     }
-
-    // Hapus Dual PNG Image Overlay Group
     if (currentOverlayGroup) {
         window.map.removeLayer(currentOverlayGroup);
         currentOverlayGroup = null;
@@ -130,20 +92,13 @@ function clearAllMapLayers() {
     }
 }
 
-/**
- * Memuat data berdasarkan tipe produk (Image Overlay Dual PNG vs GeoJSON Vector)
- * @param {number} dayIndex - Indeks hari (0 s/d 6)
- */
 function loadProductData(dayIndex) {
     currentDayIndex = dayIndex;
     const productCfg = CONFIG.products[currentCategory][currentProductKey];
 
     if (typeof showLoader === 'function') showLoader();
-
-    // Clear Layer Lama
     clearAllMapLayers();
 
-    // BRANCHING ENGINE: IMAGE OVERLAY (PNG HARIAN) vs GEOJSON (HAZARD / RISIKO)
     if (productCfg.type === 'image_overlay') {
         loadDualImageOverlay(productCfg, dayIndex);
     } else {
@@ -151,9 +106,6 @@ function loadProductData(dayIndex) {
     }
 }
 
-/**
- * ENGINE 1: Memuat Dual PNG Image Overlay (Shaded & Contour) dengan Metadata JSON
- */
 function loadDualImageOverlay(productCfg, dayIndex) {
     const jsonPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}.json`;
     const shadedPngPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}_shaded.png`;
@@ -161,39 +113,21 @@ function loadDualImageOverlay(productCfg, dayIndex) {
 
     fetch(jsonPath)
         .then(response => {
-            if (!response.ok) throw new Error(`Gagal membaca metadata JSON: ${jsonPath}`);
+            if (!response.ok) throw new Error(`Gagal membaca metadata JSON`);
             return response.json();
         })
         .then(metaData => {
             if (!window.map) return;
 
-            // Ekstraksi Bounding Box Leaflet dari JSON Metadata
-            let bounds = metaData.bounds?.leaflet_bounds;
-            if (!bounds) {
-                // Fallback Bounding Box Standar Indonesia jika JSON tidak punya leaflet_bounds
-                bounds = [[-11.0, 94.0], [6.0, 141.0]];
-            }
-
-            // Ambil nilai transparansi saat ini dari slider
+            let bounds = metaData.bounds?.leaflet_bounds || [[-11.0, 94.0], [6.0, 141.0]];
             const opacityInput = document.getElementById('opacityRange');
             const currentOpacity = opacityInput ? parseFloat(opacityInput.value) / 100 : 0.65;
 
-            // 1. Layer Shaded (Area Warna Gradasi)
-            currentShadedOverlay = L.imageOverlay(shadedPngPath, bounds, {
-                opacity: currentOpacity,
-                interactive: false
-            });
+            currentShadedOverlay = L.imageOverlay(shadedPngPath, bounds, { opacity: currentOpacity, interactive: false });
+            currentContourOverlay = L.imageOverlay(contourPngPath, bounds, { opacity: Math.min(currentOpacity + 0.2, 1.0), interactive: false });
 
-            // 2. Layer Contour (Garis Kontur & Label Nilai)
-            currentContourOverlay = L.imageOverlay(contourPngPath, bounds, {
-                opacity: Math.min(currentOpacity + 0.2, 1.0), // Kontur dibuat sedikit lebih tegas
-                interactive: false
-            });
-
-            // Gabungkan kedua PNG ke dalam LayerGroup
             currentOverlayGroup = L.layerGroup([currentShadedOverlay, currentContourOverlay]).addTo(window.map);
 
-            // Update Tanggal Validitas Header
             if (metaData.valid_time) {
                 updateValidDateTextWithDateStr(metaData.valid_time, dayIndex);
             } else {
@@ -201,8 +135,7 @@ function loadDualImageOverlay(productCfg, dayIndex) {
             }
         })
         .catch(err => {
-            console.warn(`⚠️ Gagal memuat Dual PNG Overlay: ${shadedPngPath}`, err);
-            // Fallback teks tanggal agar aplikasi tidak macet loading
+            console.warn(`⚠️ Warning: Layer overlay tidak dimuat`, err);
             updateValidDateText(dayIndex);
         })
         .finally(() => {
@@ -210,9 +143,6 @@ function loadDualImageOverlay(productCfg, dayIndex) {
         });
 }
 
-/**
- * ENGINE 2: Memuat Vektor GeoJSON Kategorikal (Hazard / Risiko)
- */
 function loadGeoJsonVector(productCfg, dayIndex) {
     const filePath = `${productCfg.folder}${productCfg.prefix}${dayIndex}${productCfg.extension || '.geojson'}`;
 
@@ -229,73 +159,34 @@ function loadGeoJsonVector(productCfg, dayIndex) {
                     const level = feature.properties ? (feature.properties.status || feature.properties.level) : 'normal';
                     const legendItem = productCfg.legends ? productCfg.legends.find(l => l.level === level) : null;
                     const color = legendItem ? legendItem.color : 'transparent';
-
-                    return {
-                        fillColor: color,
-                        fillOpacity: color === 'transparent' ? 0 : 0.65,
-                        weight: 1,
-                        color: '#475569',
-                        opacity: 0.5
-                    };
+                    return { fillColor: color, fillOpacity: color === 'transparent' ? 0 : 0.65, weight: 1, color: '#475569', opacity: 0.5 };
                 },
                 onEachFeature: function (feature, layer) {
-                    if (typeof bindHoverEffect === 'function') {
-                        bindHoverEffect(layer);
-                    }
-
+                    if (typeof bindHoverEffect === 'function') bindHoverEffect(layer);
                     layer.on('click', function (e) {
-                        if (typeof showCustomPopup === 'function') {
-                            showCustomPopup(e, feature, layer, productCfg, currentCategory, currentProductKey, currentDayIndex);
-                        }
+                        if (typeof showCustomPopup === 'function') showCustomPopup(e, feature, layer, productCfg, currentCategory, currentProductKey, currentDayIndex);
                     });
                 }
             }).addTo(window.map);
 
-            // Terapkan transparansi slider jika ada
             const rangeInput = document.getElementById('opacityRange');
-            if (rangeInput && typeof updateOpacity === 'function') {
-                updateOpacity(rangeInput.value);
-            }
-
-            // Update Teks Tanggal Validitas Header
+            if (rangeInput && typeof updateOpacity === 'function') updateOpacity(rangeInput.value);
             updateValidDateText(dayIndex);
         })
-        .catch(err => {
-            console.warn(`⚠️ Gagal memuat data GeoJSON: ${filePath}`, err);
-        })
-        .finally(() => {
-            if (typeof hideLoader === 'function') hideLoader();
-        });
+        .catch(err => console.warn(`⚠️ Gagal memuat data GeoJSON`, err))
+        .finally(() => { if (typeof hideLoader === 'function') hideLoader(); });
 }
 
-/**
- * Pengontrol Transparansi Global (Mendukung PNG Overlay & GeoJSON Vector)
- */
 function updateOpacity(val) {
     const opacityVal = parseFloat(val) / 100;
     const labelEl = document.getElementById('opacityVal');
     if (labelEl) labelEl.innerText = `${val}%`;
 
-    // 1. Jika layer aktif adalah Dual PNG Overlay
-    if (currentShadedOverlay) {
-        currentShadedOverlay.setOpacity(opacityVal);
-    }
-    if (currentContourOverlay) {
-        currentContourOverlay.setOpacity(Math.min(opacityVal + 0.2, 1.0));
-    }
-
-    // 2. Jika layer aktif adalah GeoJSON Vector
-    if (currentGeoJsonLayer) {
-        currentGeoJsonLayer.setStyle({
-            fillOpacity: opacityVal,
-            opacity: Math.min(opacityVal + 0.2, 1.0)
-        });
-    }
+    if (currentShadedOverlay) currentShadedOverlay.setOpacity(opacityVal);
+    if (currentContourOverlay) currentContourOverlay.setOpacity(Math.min(opacityVal + 0.2, 1.0));
+    if (currentGeoJsonLayer) currentGeoJsonLayer.setStyle({ fillOpacity: opacityVal, opacity: Math.min(opacityVal + 0.2, 1.0) });
 }
 
-/**
- * Menyesuaikan Teks Header Utama
- */
 function updateHeaderInfo(title, subtitle) {
     const titleEl = document.getElementById('hazardTitle');
     const subEl = document.getElementById('systemSubtitle');
@@ -303,90 +194,57 @@ function updateHeaderInfo(title, subtitle) {
     if (subEl) subEl.innerText = subtitle || "BMKG Command Center";
 }
 
-/**
- * Menyesuaikan Teks Validitas Tanggal Hari Ini s/d H+6 (Berdasarkan Indeks Hari)
- */
 function updateValidDateText(dayIndex) {
     const dateEl = document.getElementById('validDateText');
     if (!dateEl) return;
-
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + dayIndex);
-
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const dateStr = targetDate.toLocaleDateString('id-ID', options);
-
-    dateEl.innerText = `Valid: ${dateStr} (Hari H+${dayIndex})`;
+    dateEl.innerText = `Valid: ${targetDate.toLocaleDateString('id-ID', options)} (Hari H+${dayIndex})`;
 }
 
-/**
- * Menyesuaikan Teks Validitas Tanggal Langsung dari Metadata JSON (`valid_time`)
- */
 function updateValidDateTextWithDateStr(dateStrRaw, dayIndex) {
     const dateEl = document.getElementById('validDateText');
     if (!dateEl) return;
-
     if (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') {
-        const formattedDate = Utils.formatTanggal(dateStrRaw);
-        dateEl.innerText = `Valid: ${formattedDate} (Hari H+${dayIndex})`;
+        dateEl.innerText = `Valid: ${Utils.formatTanggal(dateStrRaw)} (Hari H+${dayIndex})`;
     } else {
         dateEl.innerText = `Valid: ${dateStrRaw} (Hari H+${dayIndex})`;
     }
 }
-
 
 // ==========================================
 // INISIALISASI SISTEM SAAT DOM SIAP
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("🚀 Menginisialisasi IBF WebGIS Operational System V1.2.3 - BBMKG IV...");
+    console.log("🚀 Menginisialisasi IBF WebGIS Operational System V1.2.4 - BBMKG IV...");
 
-    // 1. Tampilkan indikator loading awal
-    if (typeof showLoader === 'function') {
-        showLoader();
-    } else if (typeof Loader !== 'undefined' && typeof Loader.show === 'function') {
-        Loader.show("Menyiapkan Command Center WebGIS...");
-    }
+    if (typeof showLoader === 'function') showLoader();
+    else if (typeof Loader !== 'undefined' && typeof Loader.show === 'function') Loader.show("Menyiapkan Command Center WebGIS...");
 
-    // 2. Inisialisasi Peta Dasar & Basemap
-    if (typeof initMap === 'function') {
-        initMap();
-    }
+    if (typeof initMap === 'function') initMap();
+    if (typeof initBasemaps === 'function') initBasemaps();
+    else if (typeof initBasemap === 'function') initBasemap();
 
-    if (typeof initBasemaps === 'function') {
-        initBasemaps();
-    } else if (typeof initBasemap === 'function') {
-        initBasemap();
-    }
-
-    // 3. Inisialisasi Kontrol Tambahan UI
     if (typeof initScaleBar === 'function') initScaleBar();
     if (typeof initSearchControl === 'function') initSearchControl();
 
-    // 4. Tangani State awal aplikasi dari URL atau muat produk default 
-    // MENGUBAH DEFAULT KE HAZARD ANGIN (Agar jika data harian kosong, sistem tidak macet)
     if (typeof UrlState !== 'undefined' && typeof UrlState.applyInitialState === 'function') {
         UrlState.applyInitialState();
     } else {
-        switchProduct('hazard', 'angin');
+        // Fallback default V1.1
+        if (typeof switchProduct === 'function') switchProduct('hazard', 'angin');
     }
 
-    // Otomatis minimalkan panel jika dibuka lewat HP (layar <= 767px)
     if (window.innerWidth <= 767) {
         const panel = document.getElementById('mobilePanel');
-        if (panel) {
-            panel.classList.add('collapsed');
-        }
+        if (panel) panel.classList.add('collapsed');
     }
 
-    // 5. Sembunyikan loader setelah inisialisasi selesai
     setTimeout(() => {
-        if (typeof hideLoader === 'function') {
-            hideLoader();
-        } else if (typeof Loader !== 'undefined' && typeof Loader.hide === 'function') {
-            Loader.hide();
-        }
-        console.log("✅ IBF WebGIS V1.2.3 Berhasil Dimuat dan Siap Digunakan.");
+        if (typeof hideLoader === 'function') hideLoader();
+        else if (typeof Loader !== 'undefined' && typeof Loader.hide === 'function') Loader.hide();
+        console.log("✅ IBF WebGIS V1.2.4 Berhasil Dimuat.");
     }, 800);
 });

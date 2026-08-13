@@ -134,3 +134,182 @@ body, html {
     stroke-linecap: round;
     stroke-linejoin: round;
 }
+
+/* ========================================== */
+/* STYLING FITUR 2 & 3 (MODAL & HOTLINE BUTTON) */
+/* ========================================== */
+
+/* Tombol Navigasi Hotline WA */
+.btn-hotline {
+    background-color: #25D366 !important;
+    color: #ffffff !important;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-hotline:hover {
+    background-color: #128C7E !important;
+    transform: translateY(-1px);
+}
+
+/* Tombol Navigasi Edukasi */
+.btn-edukasi {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-edukasi:hover {
+    background-color: #1d4ed8 !important;
+    transform: translateY(-1px);
+}
+
+/* Modal Backdrop (Latar Belakang Buram) */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 99999; /* Memastikan berada di paling depan peta */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+
+/* Kotak Modal Popup */
+.modal-content {
+    background: #ffffff;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: modalSlideIn 0.25s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Header Modal */
+.modal-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: #f8fafc;
+}
+
+.modal-title-box h3 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #0f172a;
+}
+
+.modal-title-box p {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.modal-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+    color: #ef4444;
+}
+
+/* Body Modal */
+.modal-body {
+    padding: 20px;
+}
+
+.edukasi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edukasi-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #1e293b;
+    transition: all 0.2s ease;
+}
+
+.edukasi-card:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateX(3px);
+}
+
+.card-icon {
+    font-size: 22px;
+}
+
+.card-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.card-info strong {
+    font-size: 13px;
+    color: #0f172a;
+}
+
+.card-info span {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.card-arrow {
+    font-size: 16px;
+    color: #94a3b8;
+    font-weight: bold;
+}
+
+.edukasi-card:hover .card-arrow {
+    color: #3b82f6;
+}
+
+/* Footer Modal */
+.modal-footer {
+    padding: 12px 20px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    color: #64748b;
+}

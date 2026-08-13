@@ -1,127 +1,36 @@
 /* ==========================================
-   WEBGIS IBF V1.2 - MAIN STYLE SHEET
+   WEBGIS IBF V1.2 - HEADER, LOGO & CONTROLS
    ========================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-body, html { 
-    margin: 0; 
-    padding: 0; 
-    height: 100%; 
-    font-family: 'Inter', sans-serif; 
-    overflow: hidden;
-    background-color: #f8fafc;
-    color: #0f172a;
-}
-
-#map { 
-    height: 100vh; 
-    width: 100%; 
-    z-index: 1;
-}
-
-/* --- HEADER UTAMA (TERKUNCI PRESISI DI TENGAH ATAS) --- */
-.map-header {
-    position: absolute !important; 
-    top: 15px !important; 
-    left: 50% !important; 
-    right: auto !important;
-    transform: translateX(-50%) !important;
-    margin: 0 !important;
-    
-    background: #ffffff; 
-    border: 1px solid #cbd5e1;
-    padding: 10px 24px;
-    border-radius: 8px; 
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    text-align: center !important; 
-    z-index: 1000 !important; 
-    
-    width: max-content;
-    min-width: 360px;
-    max-width: calc(100vw - 400px);
-    box-sizing: border-box;
-}
-
-.map-header h3 { 
-    margin: 0; 
-    font-size: 11px; 
-    letter-spacing: 0.5px;
-    font-weight: 600; 
-    color: #64748b; 
-    text-transform: uppercase;
-}
-
-.map-header h1 { 
-    margin: 3px 0; 
-    font-size: 16px; 
-    font-weight: 700; 
-    color: #000000; 
-    line-height: 1.3;
-}
-
-.map-header p { 
-    margin: 2px 0 0 0; 
-    font-size: 12px; 
-    color: #0284c7; 
-    font-weight: 600; 
-}
-
-/* --- LOGO INSTANSI --- */
+/* --- LOGO INSTANSI (DIBESARKAN 2 KALI LIPAT) --- */
 .logo-container {
-    position: absolute;
+    position: fixed;
     top: 15px;
     right: 20px;
     z-index: 1000;
     background: #ffffff;
     border: 1px solid #cbd5e1;
-    padding: 6px 12px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 8px 16px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .logo-instansi {
-    height: 40px;
+    height: 80px; /* Diperbesar 2x lipat dari 40px */
     width: auto;
     display: block;
     object-fit: contain;
 }
 
-/* --- TOOLTIP PETA --- */
-.map-tooltip {
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #000000 !important;
-    font-weight: 600 !important;
-    font-size: 11px !important;
-    padding: 4px 8px !important;
-    border-radius: 4px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
-}
-
-/* --- PAKSA VISIBILITAS GARIS ADMINISTRASI & TEMBUS KLIK --- */
-.leaflet-pane.leaflet-adminBoundariesPane-pane {
-    pointer-events: none !important;
-}
-
-.leaflet-pane.leaflet-adminBoundariesPane-pane svg path {
-    pointer-events: none !important;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-/* ========================================== */
-/* STYLING FITUR 2 & 3 (MODAL & HOTLINE BUTTON) */
-/* ========================================== */
-
-/* Kontainer Melayang Kanan Bawah (Laptop/Desktop) */
+/* --- KONTAINER TOMBOL (DIPINDAHKAN TEPAT DI BAWAH LOGO) --- */
 .bottom-right-controls {
     position: fixed;
-    bottom: 60px; /* Dinaikkan agar bebas dari kontrol Zoom & Attribution Leaflet */
-    right: 15px;
+    top: 120px; /* Tepat melayang di bawah logo */
+    bottom: auto;
+    right: 20px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -129,9 +38,9 @@ body, html {
     align-items: flex-end;
 }
 
-/* Base Styling Tombol Aksi Custom */
+/* Base Styling Tombol Custom */
 .action-btn-custom {
-    padding: 9px 14px;
+    padding: 8px 14px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
@@ -147,7 +56,8 @@ body, html {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-width: 130px;
+    width: 100%; /* Menyesuaikan lebar kontainer agar rapi */
+    box-sizing: border-box;
 }
 
 .action-btn-custom:hover {
@@ -155,170 +65,16 @@ body, html {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
-/* Tombol Navigasi Edukasi */
-.btn-edukasi {
-    background-color: #2563eb !important;
-}
+.btn-edukasi { background-color: #2563eb !important; }
+.btn-edukasi:hover { background-color: #1d4ed8 !important; }
 
-.btn-edukasi:hover {
-    background-color: #1d4ed8 !important;
-}
+.btn-hotline { background-color: #16a34a !important; }
+.btn-hotline:hover { background-color: #15803d !important; }
 
-/* Tombol Navigasi Hotline WA */
-.btn-hotline {
-    background-color: #16a34a !important;
-}
 
-.btn-hotline:hover {
-    background-color: #15803d !important;
-}
-
-/* Menjaga Attribution Leaflet Tetap Aman di Bawah Tombol */
-.leaflet-bottom.leaflet-right {
-    margin-bottom: 5px;
-}
-
-/* Modal Backdrop (Latar Belakang Buram) */
-.modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(15, 23, 42, 0.65);
-    backdrop-filter: blur(4px);
-    z-index: 99999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 16px;
-    box-sizing: border-box;
-}
-
-/* Kotak Modal Popup */
-.modal-content {
-    background: #ffffff;
-    width: 100%;
-    max-width: 520px;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    animation: modalSlideIn 0.25s ease-out;
-}
-
-@keyframes modalSlideIn {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-/* Header Modal */
-.modal-header {
-    padding: 18px 20px;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    background: #f8fafc;
-}
-
-.modal-title-box h3 {
-    margin: 0 0 4px 0;
-    font-size: 16px;
-    color: #0f172a;
-}
-
-.modal-title-box p {
-    margin: 0;
-    font-size: 12px;
-    color: #64748b;
-}
-
-.modal-close-btn {
-    background: transparent;
-    border: none;
-    font-size: 24px;
-    line-height: 1;
-    color: #94a3b8;
-    cursor: pointer;
-    padding: 0 4px;
-    transition: color 0.2s;
-}
-
-.modal-close-btn:hover {
-    color: #ef4444;
-}
-
-/* Body Modal */
-.modal-body {
-    padding: 20px;
-}
-
-.edukasi-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.edukasi-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    text-decoration: none;
-    color: #1e293b;
-    transition: all 0.2s ease;
-}
-
-.edukasi-card:hover {
-    border-color: #3b82f6;
-    background: #f0f9ff;
-    transform: translateX(3px);
-}
-
-.card-icon {
-    font-size: 22px;
-}
-
-.card-info {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-}
-
-.card-info strong {
-    font-size: 13px;
-    color: #0f172a;
-}
-
-.card-info span {
-    font-size: 11px;
-    color: #64748b;
-    margin-top: 2px;
-}
-
-.card-arrow {
-    font-size: 16px;
-    color: #94a3b8;
-    font-weight: bold;
-}
-
-.edukasi-card:hover .card-arrow {
-    color: #3b82f6;
-}
-
-/* Footer Modal */
-.modal-footer {
-    padding: 12px 20px;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
-    text-align: center;
-    color: #64748b;
-}
-
-/* --- RESPONSIF SMARTPHONE --- */
+/* ==========================================
+   RESPONSIF SMARTPHONE (HP)
+   ========================================== */
 @media screen and (max-width: 768px) {
     .map-header {
         top: 10px !important; 
@@ -335,23 +91,31 @@ body, html {
     .map-header h1 { font-size: 12px; margin: 2px 0; }
     .map-header p { font-size: 10px; }
 
+    /* Logo Tetap Tampil di HP (Skala Menyesuaikan) */
     .logo-container { 
-        display: none; 
-    } 
-
-    /* Pindahkan tombol ke kanan atas di bawah header agar bawah bersih untuk panel waktu */
-    .bottom-right-controls {
-        top: 75px;
-        bottom: auto;
+        display: flex !important;
+        top: 65px;
         right: 12px;
-        flex-direction: row; /* Berjajar kesamping untuk menghemat ruang */
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    .logo-instansi {
+        height: 50px; /* Ukuran proporsional untuk layar HP */
+    }
+
+    /* Tombol Tepat di Bawah Logo di HP */
+    .bottom-right-controls {
+        top: 132px !important;
+        bottom: auto !important;
+        right: 12px !important;
+        flex-direction: column !important;
         gap: 6px;
     }
 
     .action-btn-custom {
         padding: 6px 10px;
         font-size: 11px;
-        min-width: auto;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 }

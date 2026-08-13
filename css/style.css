@@ -1,5 +1,5 @@
 /* ==========================================
-   WEBGIS IBF V1.1 - FIX HEADER CENTER
+   WEBGIS IBF V1.2 - MAIN STYLE SHEET
    ========================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -26,7 +26,7 @@ body, html {
     top: 15px !important; 
     left: 50% !important; 
     right: auto !important;
-    transform: translateX(-50%) !important; /* Geser 50% ke kiri dari lebarnya sendiri */
+    transform: translateX(-50%) !important;
     margin: 0 !important;
     
     background: #ffffff; 
@@ -39,7 +39,7 @@ body, html {
     
     width: max-content;
     min-width: 360px;
-    max-width: calc(100vw - 400px); /* Mencegah bentrok dengan logo/menu di samping */
+    max-width: calc(100vw - 400px);
     box-sizing: border-box;
 }
 
@@ -102,28 +102,6 @@ body, html {
     box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
 }
 
-/* --- RESPONSIF SMARTPHONE --- */
-@media screen and (max-width: 768px) {
-    .map-header {
-        top: 10px !important; 
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        min-width: auto;
-        width: calc(100vw - 24px); 
-        max-width: 100vw;
-        padding: 8px 12px; 
-        border-radius: 8px;
-    }
-
-    .map-header h3 { font-size: 9px; }
-    .map-header h1 { font-size: 12px; margin: 2px 0; }
-    .map-header p { font-size: 10px; }
-
-    .logo-container { 
-        display: none; 
-    } 
-}
-
 /* --- PAKSA VISIBILITAS GARIS ADMINISTRASI & TEMBUS KLIK --- */
 .leaflet-pane.leaflet-adminBoundariesPane-pane {
     pointer-events: none !important;
@@ -136,43 +114,63 @@ body, html {
 }
 
 /* ========================================== */
-/* STYLING FITUR 2 & 3 (MODAL & HOTLINE BUTTON) */
+/* STYLING FITUR 2 & 3 (KANAN BAWAH, MODAL & HOTLINE) */
 /* ========================================== */
 
-/* Tombol Navigasi Hotline WA */
-.btn-hotline {
-    background-color: #25D366 !important;
-    color: #ffffff !important;
-    font-weight: bold;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border-radius: 6px;
-    padding: 6px 12px;
-    transition: all 0.2s ease;
+/* Kontainer Melayang Kanan Bawah */
+.bottom-right-controls {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
 }
 
-.btn-hotline:hover {
-    background-color: #128C7E !important;
-    transform: translateY(-1px);
+/* Base Styling Tombol Aksi Custom */
+.action-btn-custom {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    text-align: center;
+    color: #ffffff !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 140px;
+}
+
+.action-btn-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 /* Tombol Navigasi Edukasi */
 .btn-edukasi {
-    background-color: #3b82f6 !important;
-    color: #ffffff !important;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    border-radius: 6px;
-    padding: 6px 12px;
-    transition: all 0.2s ease;
+    background-color: #2563eb !important;
 }
 
 .btn-edukasi:hover {
     background-color: #1d4ed8 !important;
-    transform: translateY(-1px);
+}
+
+/* Tombol Navigasi Hotline WA */
+.btn-hotline {
+    background-color: #16a34a !important;
+}
+
+.btn-hotline:hover {
+    background-color: #15803d !important;
 }
 
 /* Modal Backdrop (Latar Belakang Buram) */
@@ -184,11 +182,12 @@ body, html {
     height: 100vh;
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(4px);
-    z-index: 99999; /* Memastikan berada di paling depan peta */
+    z-index: 99999;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 16px;
+    box-sizing: border-box;
 }
 
 /* Kotak Modal Popup */
@@ -312,4 +311,38 @@ body, html {
     border-top: 1px solid #e2e8f0;
     text-align: center;
     color: #64748b;
+}
+
+/* --- RESPONSIF SMARTPHONE --- */
+@media screen and (max-width: 768px) {
+    .map-header {
+        top: 10px !important; 
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        min-width: auto;
+        width: calc(100vw - 24px); 
+        max-width: 100vw;
+        padding: 8px 12px; 
+        border-radius: 8px;
+    }
+
+    .map-header h3 { font-size: 9px; }
+    .map-header h1 { font-size: 12px; margin: 2px 0; }
+    .map-header p { font-size: 10px; }
+
+    .logo-container { 
+        display: none; 
+    } 
+
+    .bottom-right-controls {
+        bottom: 16px;
+        right: 12px;
+        gap: 6px;
+    }
+
+    .action-btn-custom {
+        padding: 8px 12px;
+        font-size: 11px;
+        min-width: 110px;
+    }
 }

@@ -1,8 +1,9 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & PNG OVERLAY V1.2
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & PNG OVERLAY V1.2.1
 // - Support Full 7-Days Timeline
 // - Specific Offset Labeling for Banjir & Longsor (H-1 to H+5)
 // - Support Dual-Engine: GeoJSON Vector & Shaded PNG Overlay
+// - Support Real-Time Opacity Slider (GeoJSON & Image Overlay)
 // - Graceful Fallback & Error Handling
 // ==========================================
 
@@ -164,7 +165,13 @@ function loadDay(index) {
             .then(metaData => {
                 let bounds = metaData?.bounds?.leaflet_bounds || [[-11.0, 94.0], [6.0, 141.0]];
 
-                // Tempelkan PNG Shaded ke peta
+                // Baca transparansi saat ini dari slider (jika ada)
+                let opacityInput = document.getElementById('opacityRange');
+                if (opacityInput) {
+                    currentOpacity = parseFloat(opacityInput.value) / 100;
+                }
+
+                // Tempelkan PNG Shaded ke peta dengan nilai currentOpacity aktif
                 activeImageOverlay = L.imageOverlay(shadedPath, bounds, {
                     opacity: currentOpacity,
                     interactive: false // Mematikan interaksi agar tidak memicu popup
@@ -218,6 +225,12 @@ function loadDay(index) {
                 }
             } else {
                 if (dateTextEl) dateTextEl.innerText = `Valid: Hari ke-${index + 1} (Data Kosong)`;
+            }
+
+            // Baca transparansi saat ini dari slider (jika ada)
+            let opacityInput = document.getElementById('opacityRange');
+            if (opacityInput) {
+                currentOpacity = parseFloat(opacityInput.value) / 100;
             }
 
             activeOverlayLayer = L.geoJSON(geojsonData, {
@@ -287,3 +300,31 @@ function updateActiveDayButtonUI(productConfig, activeIndex) {
         }
     }
 }
+
+/**
+ * FUNGSI UTAMA PENGATUR TRANSPARANSI (Mendukung PNG Overlay & GeoJSON Vector)
+ * @param {string|number} val - Nilai slider dari HTML (0 s/d 100)
+ */
+function updateOpacity(val) {
+    currentOpacity = parseFloat(val) / 100;
+
+    let labelEl = document.getElementById('opacityVal');
+    if (labelEl) {
+        labelEl.innerText = `${val}%`;
+    }
+
+    // 1. Ubah transparansi PNG Overlay jika sedang aktif
+    if (activeImageOverlay) {
+        activeImageOverlay.setOpacity(currentOpacity);
+    }
+
+    // 2. Ubah transparansi GeoJSON Vector jika sedang aktif
+    if (activeOverlayLayer) {
+        activeOverlayLayer.setStyle({
+            fillOpacity: currentOpacity
+        });
+    }
+}
+
+// Hubungkan ke window global agar bisa dipanggil langsung oleh event oninput HTML slider
+window.updateOpacity = updateOpacity;

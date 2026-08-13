@@ -1,6 +1,7 @@
 // ==========================================
-// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V2.9 (CONFIG-SYNCED SCANNER)
+// EXPORT.JS - GENERATOR LAPORAN PDF/PRINT V1.2 (CONFIG-SYNCED SCANNER)
 // - Sepenuhnya selaras dengan CONFIG.products.hazard & CONFIG.products.risiko
+// - Eksklusi Otomatis Data Harian (Fitur 1): Laporan PDF eksklusif untuk Hazard & Risiko
 // - Kop Surat Full Image (KOPSURAT.png)
 // - Ekstraksi Tanggal Langsung dari Fitur Poligon GeoJSON / Window ValidDates
 // ==========================================
@@ -160,7 +161,9 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
 
             for (let prodKey of Object.keys(groupObj)) {
                 let prod = groupObj[prodKey];
-                if (!prod || !prod.folder || !prod.prefix) continue;
+                
+                // PENGAMAN EKSTRA: Abaikan produk bertipe continuous (Fitur 1) jika tidak sengaja masuk ke grup ini
+                if (!prod || !prod.folder || !prod.prefix || prod.type === 'continuous') continue;
 
                 let url = `${prod.folder}${prod.prefix}${i}${prod.extension}`;
                 let geojson = await fetchGeoJSON(url);
@@ -183,7 +186,7 @@ async function exportImpactReportPDF(namaWilayah, kodeWilayah, levelVal, lat, lo
             return collected;
         }
 
-        // 1. Scan Langsung CONFIG.products.hazard
+        // 1. Scan Langsung CONFIG.products.hazard (Hanya Data Peringatan Dini / Kategorikal)
         if (CONFIG && CONFIG.products && CONFIG.products.hazard) {
             warningsBahaya = await scanProductGroup(CONFIG.products.hazard);
         }

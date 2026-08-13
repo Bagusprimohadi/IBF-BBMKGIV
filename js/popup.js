@@ -1,8 +1,8 @@
 // ==========================================
-// POPUP.JS - POINT IMPACT REPORT V1.2 (UNIFIED SINGLE TABLE LAYOUT)
-// - Mendukung Data Kontinu (Angka + Satuan)
-// - Mendukung Mini Sparkline SVG (Trend 7 Hari)
-// - Menyembunyikan tombol ekspor PDF untuk Info Harian
+// POPUP.JS - POINT IMPACT REPORT V1.2.3
+// - Membatasi Popup Khusus untuk Layer Vektor GeoJSON (Hazard & Risiko)
+// - Mem-bypass Popup pada Layer Dual PNG Overlay (Info Harian)
+// - Menyediakan Ekspor PDF Eksklusif Peringatan Dini Bencana
 // ==========================================
 
 /**
@@ -45,9 +45,8 @@ function getCoreParameterName(productConfig) {
  * FUNGSI BANTUAN 3: Mencocokkan Data Poligon dengan Konfigurasi Legenda secara Akurat (Hazard/Risiko)
  */
 function resolveHazardInfo(props, productConfig) {
-    // Jika data kontinu (Fitur 1), ini tidak dipakai. Langsung return null
-    if (productConfig && productConfig.type === 'continuous') {
-        return { isContinuous: true, value: props.value, unit: productConfig.unit || '' };
+    if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous')) {
+        return { isContinuous: true, isSafe: true };
     }
 
     let textKey = String(props.kategori || props.level || props.code || '').toLowerCase().trim();
@@ -83,11 +82,16 @@ function resolveHazardInfo(props, productConfig) {
 
 /**
  * ==========================================
- * 1. ENTRY POINT KLIK GLOBAL UNTUK SEMUA JENIS DATA (BARU)
+ * 1. ENTRY POINT KLIK POPUP UNTUK LAYER VEKTOR (HAZARD / RISIKO)
  * ==========================================
  */
 function showCustomPopup(clickEvent, feature, layer, productConfig, category, productKey, dayIndex) {
     if (!clickEvent || !feature) return;
+
+    // KUNCI PENGAMAN: Jangan tampilkan popup jika produk bertipe PNG Overlay / Harian
+    if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous')) {
+        return;
+    }
 
     let lat = clickEvent.latlng.lat;
     let lon = clickEvent.latlng.lng;
@@ -104,14 +108,13 @@ function showCustomPopup(clickEvent, feature, layer, productConfig, category, pr
             rawProvinsi = adminFeat.properties.WADMPR || adminFeat.properties.provinsi || adminFeat.properties.NAME_1 || "Indonesia";
             kodeWilayah = adminFeat.properties.KODBPS || adminFeat.properties.KAB_CODE || kodeWilayah;
         } else {
-            rawWilayah = "Lokasi Kelautan / Daratan Terdampak";
+            rawWilayah = "Wilayah Terdampak";
         }
     }
 
     let hazardInfo = resolveHazardInfo(props, productConfig);
     let dateVal = props.date ? ((typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') ? Utils.formatTanggal(props.date) : props.date) : "-";
     
-    // Jika format date kosong (misal data kontinu harian yang tidak punya atribut date), ambil dari array tanggal Harian
     if (dateVal === "-" || !dateVal) {
         let targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + dayIndex);
@@ -120,21 +123,8 @@ function showCustomPopup(clickEvent, feature, layer, productConfig, category, pr
 
     let parameterName = getCoreParameterName(productConfig);
 
-    if (hazardInfo.isContinuous) {
-        // Render Popup untuk Data Numerik Harian
-        let valueStr = typeof props.value !== 'undefined' && props.value !== null ? parseFloat(props.value).toFixed(2) : 'N/A';
-        let hexColor = typeof getColorFromRamp === 'function' && props.value !== null 
-            ? getColorFromRamp(props.value, productConfig.min, productConfig.max, productConfig.colorRamp) 
-            : '#38bdf8';
-            
-        renderUniversalPopup(clickEvent.latlng, rawWilayah, rawProvinsi, kodeWilayah, `${valueStr} ${hazardInfo.unit}`, parameterName, hexColor, dateVal, productConfig, lat, lon, false, true);
-
-        // Tambahkan fungsi fetch sparkline (Tren 7 Hari) setelah popup terbuka
-        fetchAndRenderSparkline(lat, lon, productConfig, category, productKey);
-    } else {
-        // Render Popup untuk Hazard/Risiko Kategorikal
-        renderUniversalPopup(clickEvent.latlng, rawWilayah, rawProvinsi, kodeWilayah, hazardInfo.label, parameterName, hazardInfo.color, dateVal, productConfig, lat, lon, hazardInfo.isSafe, false);
-    }
+    // Render Popup untuk Hazard/Risiko
+    renderUniversalPopup(clickEvent.latlng, rawWilayah, rawProvinsi, kodeWilayah, hazardInfo.label, parameterName, hazardInfo.color, dateVal, productConfig, lat, lon, hazardInfo.isSafe);
 }
 
 /**
@@ -150,6 +140,13 @@ function bindFeaturePopup(hazardFeature, hazardLayer, productConfig, clickEvent)
 function generateGlobalPopup(e, adminFeature) {
     if (!e || !e.latlng) return;
 
+    let productConfig = (typeof CONFIG !== 'undefined' && currentCategory && currentProductKey) ? CONFIG.products[currentCategory]?.[currentProductKey] : null;
+
+    // KUNCI PENGAMAN: Jika layer berupa PNG Overlay (Harian), Batal Tampilkan Popup
+    if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous' || currentCategory === 'harian')) {
+        return; 
+    }
+
     let props = adminFeature && adminFeature.properties ? adminFeature.properties : {};
     if (Object.keys(props).length === 0) {
         let feat = getAdminFeatureByLatLng(e.latlng);
@@ -159,50 +156,29 @@ function generateGlobalPopup(e, adminFeature) {
     let rawWilayah = props.WADMKK || props.kabupaten || props.NAME_2 || props.NAMOBJ || "Area Tidak Diketahui";
     let rawProvinsi = props.WADMPR || props.provinsi || props.NAME_1 || "Indonesia";
     let kodeWilayah = props.KODBPS || props.KAB_CODE || props.id || '-';
-    let productConfig = (typeof CONFIG !== 'undefined' && currentCategory && currentProductKey) ? CONFIG.products[currentCategory]?.[currentProductKey] : null;
 
     let lat = e.latlng.lat;
     let lon = e.latlng.lng;
     let dateVal = "-";
     let parameterName = getCoreParameterName(productConfig);
 
-    if (productConfig && productConfig.type === 'continuous') {
-         // Jangan render popup di area kosong jika produknya berupa Point Data Harian
-         return; 
-    }
-
-    renderUniversalPopup(e.latlng, rawWilayah, rawProvinsi, kodeWilayah, "AMAN / NORMAL", parameterName, "#10b981", dateVal, productConfig, lat, lon, true, false);
+    renderUniversalPopup(e.latlng, rawWilayah, rawProvinsi, kodeWilayah, "AMAN / NORMAL", parameterName, "#10b981", dateVal, productConfig, lat, lon, true);
 }
 
 /**
  * ==========================================
- * 3. RENDERER UTAMA (1 TABEL UNIFIED KONSISTEN)
+ * 3. RENDERER UTAMA (TABEL UNIFIED PERINGATAN DINI)
  * ==========================================
  */
-function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, parameterName, hexColor, dateVal, productConfig, lat, lon, isSafe, isContinuous) {
+function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, parameterName, hexColor, dateVal, productConfig, lat, lon, isSafe) {
     let coordText = (typeof Utils !== 'undefined' && typeof Utils.formatKoordinat === 'function') ? `${Utils.formatKoordinat(lat, 'lat')}, ${Utils.formatKoordinat(lon, 'lon')}` : `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
     let currentDayIdx = (typeof currentDayIndex !== 'undefined') ? currentDayIndex : 0;
     let dayLabelTag = `H${currentDayIdx === 0 ? '0' : '+' + currentDayIdx}`;
     
     let levelClass = isSafe ? 'badge-safe' : getLevelBadgeClass(levelVal);
-    let headerTitle = (isSafe || isContinuous) ? '📍 INFORMASI WILAYAH' : '📍 PERINGATAN DINI';
+    let headerTitle = isSafe ? '📍 INFORMASI WILAYAH' : '📍 PERINGATAN DINI';
     
-    // Status/Nilai Label Styling
-    let statusBadgeHTML = isContinuous 
-        ? `<span style="font-weight: bold; font-size: 13px; color: #0f172a;">${levelVal}</span>`
-        : `<span class="badge ${levelClass}" style="background: ${hexToRgba(hexColor, 0.2)}; color: ${hexColor}; border: 1px solid ${hexColor}; font-weight: bold; display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${levelVal.toUpperCase()}</span>`;
-
-    // Tombol Export PDF (Sembunyikan jika continuous / Fitur 1)
-    let footerHTML = '';
-    if (!isContinuous) {
-        footerHTML = `
-            <div class="popup-footer" style="margin-top: 8px;">
-                <button class="btn-export" onclick="exportImpactReportPDF('${wilayah}', '${kodeWilayah}', '${levelVal}', ${lat}, ${lon})" style="width: 100%; cursor: pointer;">
-                    📄 Unduh Laporan (PDF)
-                </button>
-            </div>
-        `;
-    }
+    let statusBadgeHTML = `<span class="badge ${levelClass}" style="background: ${hexToRgba(hexColor, 0.2)}; color: ${hexColor}; border: 1px solid ${hexColor}; font-weight: bold; display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${levelVal.toUpperCase()}</span>`;
 
     let html = `
         <div class="impact-popup" style="width:100%;">
@@ -239,7 +215,7 @@ function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, 
                                 <td class="date-label" style="padding: 4px 2px; color: #0f172a;">${parameterName}</td>
                             </tr>
                             <tr>
-                                <td class="day-label" style="padding: 4px 2px; font-weight: bold; color: #475569;">${isContinuous ? 'Nilai Harian' : 'Tingkat Status'}</td>
+                                <td class="day-label" style="padding: 4px 2px; font-weight: bold; color: #475569;">Tingkat Status</td>
                                 <td class="status-cell" style="padding: 4px 2px;">
                                     ${statusBadgeHTML}
                                 </td>
@@ -247,114 +223,23 @@ function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, 
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Wadah Khusus Untuk Mini Sparkline (Jika Continuous) -->
-                <div id="sparklineContainer" style="width: 100%; margin-top: 10px; display: ${isContinuous ? 'block' : 'none'};">
-                     <div style="font-size: 10px; color: #94a3b8; text-align: center;">Memuat tren 7 hari...</div>
-                </div>
             </div>
             
-            ${footerHTML}
+            <div class="popup-footer" style="margin-top: 8px;">
+                <button class="btn-export" onclick="exportImpactReportPDF('${wilayah}', '${kodeWilayah}', '${levelVal}', ${lat}, ${lon})" style="width: 100%; cursor: pointer;">
+                    📄 Unduh Laporan (PDF)
+                </button>
+            </div>
         </div>
     `;
 
-    L.popup({ maxWidth: 380, minWidth: 300, className: 'futuristic-popup' })
-        .setLatLng(latlng)
-        .setContent(html)
-        .openOn(map);
-}
-
-/**
- * ==========================================
- * 4. MINI SPARKLINE SVG GENERATOR (TREN 7 HARI)
- * ==========================================
- */
-function fetchAndRenderSparkline(lat, lon, productConfig, category, productKey) {
-    let container = document.getElementById('sparklineContainer');
-    if (!container) return;
-
-    let fetchPromises = [];
-    let days = productConfig.days || 7;
-
-    // Radius pencarian titik terdekat (Toleransi koordinat Point)
-    const TOLERANCE = 0.05; 
-
-    // Ambil data untuk setiap hari (H0 s.d H6)
-    for (let i = 0; i < days; i++) {
-        let filePath = `${productConfig.folder}${productConfig.prefix}${i}${productConfig.extension}`;
-        fetchPromises.push(
-            fetch(filePath)
-                .then(response => response.ok ? response.json() : null)
-                .catch(() => null)
-        );
+    if (window.map) {
+        L.popup({ maxWidth: 380, minWidth: 300, className: 'futuristic-popup' })
+            .setLatLng(latlng)
+            .setContent(html)
+            .openOn(window.map);
     }
-
-    Promise.all(fetchPromises).then(results => {
-        let values = [];
-        
-        results.forEach(geojson => {
-            let foundValue = 0;
-            if (geojson && geojson.features) {
-                // Cari feature Point terdekat dengan koordinat klik
-                let closestFeat = geojson.features.find(f => {
-                    let c = f.geometry.coordinates;
-                    return (Math.abs(c[0] - lon) < TOLERANCE) && (Math.abs(c[1] - lat) < TOLERANCE);
-                });
-                if (closestFeat && closestFeat.properties) {
-                    foundValue = parseFloat(closestFeat.properties.value || 0);
-                }
-            }
-            values.push(foundValue);
-        });
-
-        // Gambar SVG SVG jika data berhasil terkumpul
-        drawSvgSparkline(container, values, productConfig.min, productConfig.max, productConfig.unit);
-    });
 }
-
-function drawSvgSparkline(container, dataPoints, minScale, maxScale, unit) {
-    if (!dataPoints || dataPoints.length === 0) {
-        container.innerHTML = "<div style='font-size: 10px; color: #94a3b8; text-align: center;'>Data tren tidak tersedia</div>";
-        return;
-    }
-
-    // Auto-scale SVG Y-Axis (Jika nilai aktual lebih besar/kecil dari min/max setting)
-    let minVal = Math.min(...dataPoints);
-    let maxVal = Math.max(...dataPoints);
-    if (minVal === maxVal) { maxVal += 1; minVal -= 1; }
-
-    const width = 280;
-    const height = 50;
-    const paddingX = 10;
-    const paddingY = 10;
-    const innerWidth = width - (paddingX * 2);
-    const innerHeight = height - (paddingY * 2);
-
-    // Hitung posisi tiap titik
-    let pointsStr = dataPoints.map((val, idx) => {
-        let x = paddingX + (idx * (innerWidth / (dataPoints.length - 1)));
-        let y = height - paddingY - (((val - minVal) / (maxVal - minVal)) * innerHeight);
-        return `${x},${y}`;
-    }).join(' ');
-
-    let svgHtml = `
-        <div style="font-size: 10px; font-weight: 600; color: #475569; margin-bottom: 2px;">Tren 7 Hari Kedepan (${unit})</div>
-        <svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: 60px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
-            <polyline points="${pointsStr}" style="fill:none; stroke:#0284c7; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" />
-            ${dataPoints.map((val, idx) => {
-                let x = paddingX + (idx * (innerWidth / (dataPoints.length - 1)));
-                let y = height - paddingY - (((val - minVal) / (maxVal - minVal)) * innerHeight);
-                return `<circle cx="${x}" cy="${y}" r="3" fill="#ffffff" stroke="#0284c7" stroke-width="1.5" />`;
-            }).join('')}
-        </svg>
-        <div style="display:flex; justify-content:space-between; font-size:9px; color:#94a3b8; padding: 2px 4px;">
-            <span>H0</span><span>H1</span><span>H2</span><span>H3</span><span>H4</span><span>H5</span><span>H6</span>
-        </div>
-    `;
-
-    container.innerHTML = svgHtml;
-}
-
 
 // Helpers
 function getLevelBadgeClass(levelText) {
@@ -367,7 +252,6 @@ function getLevelBadgeClass(levelText) {
 
 function hexToRgba(hex, alpha) {
     if (!hex || hex === 'transparent') return 'rgba(56, 189, 248, 0.1)';
-    // Handle rgb/rgba string if continuous legend passes it
     if (String(hex).startsWith('rgb')) return String(hex).replace(')', `, ${alpha})`).replace('rgb(', 'rgba(');
     
     let c = String(hex).replace('#','');

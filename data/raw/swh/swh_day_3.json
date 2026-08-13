@@ -1,0 +1,22 @@
+{
+  "param": "swh",
+  "valid_time": "2026-08-16",
+  "min_value": 0.25,
+  "max_value": 2.84,
+  "bounds": {
+    "south": -11.0,
+    "west": 95.0,
+    "north": 6.01,
+    "east": 141.08,
+    "leaflet_bounds": [
+      [
+        -11.0,
+        95.0
+      ],
+      [
+        6.01,
+        141.08
+      ]
+    ]
+  }
+}

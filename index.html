@@ -8,7 +8,7 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Modular CSS (Clean Light Theme V1.1) -->
+    <!-- Modular CSS (Clean Light Theme V1.2) -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/controls.css">
     <link rel="stylesheet" href="css/legend.css">
@@ -42,6 +42,19 @@
                 <button onclick="changeBasemap('voyager')">🗺️ CartoDB Voyager (Jalan)</button>
                 <button onclick="changeBasemap('satellite')">🛰️ Esri World Imagery (Satelit)</button>
                 <button onclick="changeBasemap('topo')">⛰️ OpenTopoMap (Topografi)</button>
+            </div>
+        </div>
+
+        <!-- FITUR 1: Info Cuaca / Laut Harian (Baru Diletakkan Tepat Di Bawah Map Settings) -->
+        <div class="dropdown-wrapper" id="harianDropdown">
+            <button class="dropdown-btn" onclick="toggleDropdown('harianDropdown')">🌦️ Info Cuaca/Laut Harian ▾</button>
+            <div class="dropdown-content">
+                <button onclick="switchProduct('harian', 'swh')">Tinggi Gelombang</button>
+                <button onclick="switchProduct('harian', 'wind_max')">Kecepatan Angin Maksimum</button>
+                <button onclick="switchProduct('harian', 'tp_sum')">Akumulasi Curah Hujan</button>
+                <button onclick="switchProduct('harian', 'current_speed_max')">Kecepatan Arus Permukaan</button>
+                <button onclick="switchProduct('harian', 'tmax')">Suhu Udara Maksimum</button>
+                <button onclick="switchProduct('harian', 'tmin')">Suhu Udara Minimum</button>
             </div>
         </div>
 
@@ -86,8 +99,7 @@
         <!-- Isi Konten Panel -->
         <div class="panel-body-content" id="panelBody">
             <div class="time-controls">
-            <!-- Navigasi Waktu Prediksi -->
-            <h4>_____________________________________</h4>
+                <!-- Navigasi Waktu Prediksi -->
                 <div class="button-group" id="dayButtonsContainer"></div>
                 <div class="nav-playback-group">
                     <button class="action-btn" onclick="prevStep()">&laquo; Prev</button>
@@ -193,7 +205,7 @@
     <!-- LEAFLET JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- MODUL JAVASCRIPT V1.1 -->
+    <!-- MODUL JAVASCRIPT V1.2 -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/map.js"></script>

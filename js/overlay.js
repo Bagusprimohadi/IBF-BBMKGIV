@@ -1,14 +1,16 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & VEKTOR V1.3
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & PNG OVERLAY V1.2
 // - Support Full 7-Days Timeline
 // - Specific Offset Labeling for Banjir & Longsor (H-1 to H+5)
+// - Support Dual-Engine: GeoJSON Vector & Shaded PNG Overlay
 // - Graceful Fallback & Error Handling
 // ==========================================
 
 let currentCategory = 'hazard'; 
 let currentProductKey = 'angin'; 
 let currentOpacity = 0.65; 
-let activeOverlayLayer = null; 
+let activeOverlayLayer = null; // Container untuk Layer GeoJSON
+let activeImageOverlay = null; // Container untuk Layer PNG Shaded Overlay
 
 /**
  * Memaksa layer administrasi (Kabupaten & Provinsi) tetap berada di atas overlay hazard
@@ -19,6 +21,22 @@ function keepAdminBoundariesOnTop() {
     }
     if (typeof provinsiLayer !== 'undefined' && provinsiLayer && map.hasLayer(provinsiLayer)) {
         provinsiLayer.bringToFront();
+    }
+}
+
+/**
+ * Membersihkan SELURUH layer aktif (GeoJSON maupun PNG) dari peta
+ */
+function clearAllActiveOverlays() {
+    if (!map) return;
+    
+    if (activeOverlayLayer) {
+        map.removeLayer(activeOverlayLayer);
+        activeOverlayLayer = null;
+    }
+    if (activeImageOverlay) {
+        map.removeLayer(activeImageOverlay);
+        activeImageOverlay = null;
     }
 }
 
@@ -49,10 +67,8 @@ function switchProduct(category, productKey) {
         renderLegend(productConfig);
     }
 
-    if (activeOverlayLayer) {
-        map.removeLayer(activeOverlayLayer);
-        activeOverlayLayer = null;
-    }
+    // Bersihkan peta saat ganti produk
+    clearAllActiveOverlays();
 
     loadProductTimeline(category, productKey);
 }
@@ -82,7 +98,6 @@ function loadProductTimeline(category, productKey) {
             
             // LOGIKA LABEL TOMBOL:
             if (isOffsetProduct) {
-                // Indeks 0 = H-1, Indeks 1 = H0, Indeks 2 = H+1, ..., Indeks 6 = H+5
                 if (i === 0) {
                     btn.innerText = 'H-1';
                 } else if (i === 1) {
@@ -91,7 +106,6 @@ function loadProductTimeline(category, productKey) {
                     btn.innerText = `H+${i - 1}`;
                 }
             } else {
-                // Normal: Indeks 0 = H0, Indeks 1 = H+1, ..., Indeks 6 = H+6
                 btn.innerText = `H${i === 0 ? '0' : '+' + i}`; 
             }
 
@@ -121,22 +135,69 @@ function getFeatureColor(feature, productConfig) {
     return "#38bdf8";
 }
 
+/**
+ * UTAMA: MEMUAT DATA HARI KE-N (Dukungan Cabang PNG & GeoJSON)
+ */
 function loadDay(index) {
     window.currentIndex = index;
     let productConfig = CONFIG.products[currentCategory][currentProductKey];
-    let uniqueInit = new Date().getTime();
-
-    let filePath = `${productConfig.folder}${productConfig.prefix}${index}${productConfig.extension}?v=${uniqueInit}`;
-
     let dateTextEl = document.getElementById('validDateText');
     if (dateTextEl) dateTextEl.innerText = `Valid: Memuat Hari ke-${index + 1}...`;
 
-    if (activeOverlayLayer) {
-        map.removeLayer(activeOverlayLayer);
-        activeOverlayLayer = null;
-    }
+    // Bersihkan seluruh layer yang ada di peta
+    clearAllActiveOverlays();
 
     if (typeof showLoader === 'function') showLoader();
+
+    // ==========================================
+    // CABANG 1: JIKA TIPE PRODUK = IMAGE_OVERLAY (PNG HARIAN)
+    // ==========================================
+    if (productConfig.type === 'image_overlay') {
+        let jsonPath = `${productConfig.folder}${productConfig.prefix}${index}.json`;
+        let shadedPath = `${productConfig.folder}${productConfig.prefix}${index}_shaded.png`;
+
+        fetch(jsonPath)
+            .then(res => {
+                if (!res.ok) throw new Error(`Metadata ${productConfig.prefix}${index}.json tidak ditemukan`);
+                return res.json();
+            })
+            .then(metaData => {
+                let bounds = metaData?.bounds?.leaflet_bounds || [[-11.0, 94.0], [6.0, 141.0]];
+
+                // Tempelkan PNG Shaded ke peta
+                activeImageOverlay = L.imageOverlay(shadedPath, bounds, {
+                    opacity: currentOpacity,
+                    interactive: false // Mematikan interaksi agar tidak memicu popup
+                }).addTo(map);
+
+                // Update teks tanggal dari metadata JSON
+                if (metaData.valid_time && dateTextEl) {
+                    dateTextEl.innerText = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') 
+                        ? `Valid: ${Utils.formatTanggal(metaData.valid_time)}`
+                        : `Valid: ${metaData.valid_time}`;
+                } else if (dateTextEl) {
+                    dateTextEl.innerText = `Valid: Prediksi Hari ke-${index + 1}`;
+                }
+
+                keepAdminBoundariesOnTop();
+                updateActiveDayButtonUI(productConfig, index);
+                if (typeof hideLoader === 'function') hideLoader();
+            })
+            .catch(err => {
+                console.warn("Peringatan PNG Overlay:", err.message);
+                if (dateTextEl) dateTextEl.innerText = `⚠️ Data PNG Hari ke-${index + 1} Belum Tersedia`;
+                updateActiveDayButtonUI(productConfig, index);
+                if (typeof hideLoader === 'function') hideLoader();
+            });
+
+        return; // Selesai untuk PNG
+    }
+
+    // ==========================================
+    // CABANG 2: JIKA TIPE PRODUK = GEOJSON (HAZARD & RISIKO)
+    // ==========================================
+    let uniqueInit = new Date().getTime();
+    let filePath = `${productConfig.folder}${productConfig.prefix}${index}${productConfig.extension}?v=${uniqueInit}`;
 
     fetch(filePath)
         .then(res => {
@@ -190,27 +251,17 @@ function loadDay(index) {
                 }
             }).addTo(map);
 
-            // Layer maritim ditaruh di paling belakang (di bawah daratan)
+            // Layer maritim ditaruh di paling belakang
             if (currentProductKey.includes('snorkling') || currentProductKey.includes('diving')) {
                 activeOverlayLayer.bringToBack();
             }
             
             keepAdminBoundariesOnTop();
-
-            // Update status tombol aktif di UI
-            let totalDays = productConfig.days || 7;
-            for (let i = 0; i < totalDays; i++) {
-                let btn = document.getElementById('day-btn-' + i);
-                if (btn) {
-                    btn.classList.toggle('active', i === index);
-                }
-            }
-
+            updateActiveDayButtonUI(productConfig, index);
             if (typeof hideLoader === 'function') hideLoader();
         })
         .catch(err => {
             console.warn("Peringatan pemuatan GeoJSON:", err.message);
-            
             if (dateTextEl) {
                 if (window.validDates && window.validDates[index]) {
                     dateTextEl.innerText = `Valid: ${window.validDates[index]} (Data Belum Tersedia)`;
@@ -219,15 +270,20 @@ function loadDay(index) {
                 }
             }
 
-            // Tetap tandai tombol aktif di UI
-            let totalDays = productConfig.days || 7;
-            for (let i = 0; i < totalDays; i++) {
-                let btn = document.getElementById('day-btn-' + i);
-                if (btn) {
-                    btn.classList.toggle('active', i === index);
-                }
-            }
-
+            updateActiveDayButtonUI(productConfig, index);
             if (typeof hideLoader === 'function') hideLoader();
         });
+}
+
+/**
+ * Helper untuk memperbarui status tombol aktif di UI
+ */
+function updateActiveDayButtonUI(productConfig, activeIndex) {
+    let totalDays = productConfig.days || 7;
+    for (let i = 0; i < totalDays; i++) {
+        let btn = document.getElementById('day-btn-' + i);
+        if (btn) {
+            btn.classList.toggle('active', i === activeIndex);
+        }
+    }
 }

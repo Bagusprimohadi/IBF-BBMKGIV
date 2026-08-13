@@ -1,19 +1,20 @@
 // ==========================================
 // APP.JS - ENTRY POINT UTAMA APLIKASI V1.2.4
-// - Mempertahankan kompatibilitas struktur V1.1
-// - Menggunakan var agar kebal dari deklarasi ganda di file lain
+// - Safe Global Scope Handling (Bypass Duplicate Variable Errors)
+// - Support Dual PNG Overlay (Shaded & Contour) + JSON Metadata
+// - Support GeoJSON Vector Layers (Hazard & Risiko)
 // ==========================================
 
-// Variable State Global Aplikasi (Kebal Bentrok)
-var currentCategory = typeof currentCategory !== 'undefined' ? currentCategory : 'hazard';
-var currentProductKey = typeof currentProductKey !== 'undefined' ? currentProductKey : 'angin';
-var currentDayIndex = typeof currentDayIndex !== 'undefined' ? currentDayIndex : 0;
+// Inisialisasi State Global secara Aman (Menempel pada Window)
+window.currentCategory = window.currentCategory || 'hazard';
+window.currentProductKey = window.currentProductKey || 'angin';
+window.currentDayIndex = window.currentDayIndex || 0;
 
-// Layer Active Handlers
-var currentGeoJsonLayer = null;      // Untuk Layer Vektor GeoJSON (Hazard / Risiko)
-var currentShadedOverlay = null;     // Untuk PNG Shaded Overlay (Harian)
-var currentContourOverlay = null;    // Untuk PNG Contour Overlay (Harian)
-var currentOverlayGroup = null;      // Group Container Dual PNG Overlay
+// Active Layer Handlers
+window.currentGeoJsonLayer = window.currentGeoJsonLayer || null;
+window.currentShadedOverlay = window.currentShadedOverlay || null;
+window.currentContourOverlay = window.currentContourOverlay || null;
+window.currentOverlayGroup = window.currentOverlayGroup || null;
 
 // ==========================================
 // FUNGSI KONTROL UI GLOBAL
@@ -57,13 +58,13 @@ function toggleMobilePanel() {
 function switchProduct(category, productKey) {
     closeAllDropdowns();
 
-    if (!CONFIG.products[category] || !CONFIG.products[category][productKey]) {
+    if (!CONFIG || !CONFIG.products || !CONFIG.products[category] || !CONFIG.products[category][productKey]) {
         console.error(`❌ Produk tidak ditemukan: category=${category}, key=${productKey}`);
         return;
     }
 
-    currentCategory = category;
-    currentProductKey = productKey;
+    window.currentCategory = category;
+    window.currentProductKey = productKey;
 
     const productCfg = CONFIG.products[category][productKey];
 
@@ -71,30 +72,32 @@ function switchProduct(category, productKey) {
     if (typeof renderDayButtons === 'function') renderDayButtons(productCfg.days || 7);
     if (typeof renderLegend === 'function') renderLegend(productCfg);
 
-    loadProductData(currentDayIndex);
+    loadProductData(window.currentDayIndex);
 
     if (typeof UrlState !== 'undefined' && typeof UrlState.updateUrl === 'function') {
-        UrlState.updateUrl(category, productKey, currentDayIndex);
+        UrlState.updateUrl(category, productKey, window.currentDayIndex);
     }
 }
 
 function clearAllMapLayers() {
     if (!window.map) return;
-    if (currentGeoJsonLayer) {
-        window.map.removeLayer(currentGeoJsonLayer);
-        currentGeoJsonLayer = null;
+
+    if (window.currentGeoJsonLayer) {
+        window.map.removeLayer(window.currentGeoJsonLayer);
+        window.currentGeoJsonLayer = null;
     }
-    if (currentOverlayGroup) {
-        window.map.removeLayer(currentOverlayGroup);
-        currentOverlayGroup = null;
-        currentShadedOverlay = null;
-        currentContourOverlay = null;
+
+    if (window.currentOverlayGroup) {
+        window.map.removeLayer(window.currentOverlayGroup);
+        window.currentOverlayGroup = null;
+        window.currentShadedOverlay = null;
+        window.currentContourOverlay = null;
     }
 }
 
 function loadProductData(dayIndex) {
-    currentDayIndex = dayIndex;
-    const productCfg = CONFIG.products[currentCategory][currentProductKey];
+    window.currentDayIndex = dayIndex;
+    const productCfg = CONFIG.products[window.currentCategory][window.currentProductKey];
 
     if (typeof showLoader === 'function') showLoader();
     clearAllMapLayers();
@@ -113,7 +116,7 @@ function loadDualImageOverlay(productCfg, dayIndex) {
 
     fetch(jsonPath)
         .then(response => {
-            if (!response.ok) throw new Error(`Gagal membaca metadata JSON`);
+            if (!response.ok) throw new Error(`Gagal membaca metadata JSON: ${jsonPath}`);
             return response.json();
         })
         .then(metaData => {
@@ -123,10 +126,10 @@ function loadDualImageOverlay(productCfg, dayIndex) {
             const opacityInput = document.getElementById('opacityRange');
             const currentOpacity = opacityInput ? parseFloat(opacityInput.value) / 100 : 0.65;
 
-            currentShadedOverlay = L.imageOverlay(shadedPngPath, bounds, { opacity: currentOpacity, interactive: false });
-            currentContourOverlay = L.imageOverlay(contourPngPath, bounds, { opacity: Math.min(currentOpacity + 0.2, 1.0), interactive: false });
+            window.currentShadedOverlay = L.imageOverlay(shadedPngPath, bounds, { opacity: currentOpacity, interactive: false });
+            window.currentContourOverlay = L.imageOverlay(contourPngPath, bounds, { opacity: Math.min(currentOpacity + 0.2, 1.0), interactive: false });
 
-            currentOverlayGroup = L.layerGroup([currentShadedOverlay, currentContourOverlay]).addTo(window.map);
+            window.currentOverlayGroup = L.layerGroup([window.currentShadedOverlay, window.currentContourOverlay]).addTo(window.map);
 
             if (metaData.valid_time) {
                 updateValidDateTextWithDateStr(metaData.valid_time, dayIndex);
@@ -135,7 +138,7 @@ function loadDualImageOverlay(productCfg, dayIndex) {
             }
         })
         .catch(err => {
-            console.warn(`⚠️ Warning: Layer overlay tidak dimuat`, err);
+            console.warn(`⚠️ Warning: Dual PNG Overlay tidak ditemukan`, err);
             updateValidDateText(dayIndex);
         })
         .finally(() => {
@@ -154,7 +157,7 @@ function loadGeoJsonVector(productCfg, dayIndex) {
         .then(data => {
             if (!window.map) return;
 
-            currentGeoJsonLayer = L.geoJSON(data, {
+            window.currentGeoJsonLayer = L.geoJSON(data, {
                 style: function (feature) {
                     const level = feature.properties ? (feature.properties.status || feature.properties.level) : 'normal';
                     const legendItem = productCfg.legends ? productCfg.legends.find(l => l.level === level) : null;
@@ -164,7 +167,7 @@ function loadGeoJsonVector(productCfg, dayIndex) {
                 onEachFeature: function (feature, layer) {
                     if (typeof bindHoverEffect === 'function') bindHoverEffect(layer);
                     layer.on('click', function (e) {
-                        if (typeof showCustomPopup === 'function') showCustomPopup(e, feature, layer, productCfg, currentCategory, currentProductKey, currentDayIndex);
+                        if (typeof showCustomPopup === 'function') showCustomPopup(e, feature, layer, productCfg, window.currentCategory, window.currentProductKey, window.currentDayIndex);
                     });
                 }
             }).addTo(window.map);
@@ -182,9 +185,9 @@ function updateOpacity(val) {
     const labelEl = document.getElementById('opacityVal');
     if (labelEl) labelEl.innerText = `${val}%`;
 
-    if (currentShadedOverlay) currentShadedOverlay.setOpacity(opacityVal);
-    if (currentContourOverlay) currentContourOverlay.setOpacity(Math.min(opacityVal + 0.2, 1.0));
-    if (currentGeoJsonLayer) currentGeoJsonLayer.setStyle({ fillOpacity: opacityVal, opacity: Math.min(opacityVal + 0.2, 1.0) });
+    if (window.currentShadedOverlay) window.currentShadedOverlay.setOpacity(opacityVal);
+    if (window.currentContourOverlay) window.currentContourOverlay.setOpacity(Math.min(opacityVal + 0.2, 1.0));
+    if (window.currentGeoJsonLayer) window.currentGeoJsonLayer.setStyle({ fillOpacity: opacityVal, opacity: Math.min(opacityVal + 0.2, 1.0) });
 }
 
 function updateHeaderInfo(title, subtitle) {
@@ -233,7 +236,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof UrlState !== 'undefined' && typeof UrlState.applyInitialState === 'function') {
         UrlState.applyInitialState();
     } else {
-        // Fallback default V1.1
         if (typeof switchProduct === 'function') switchProduct('hazard', 'angin');
     }
 

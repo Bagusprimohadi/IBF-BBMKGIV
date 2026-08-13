@@ -1,5 +1,5 @@
 // ==========================================
-// POPUP.JS - POINT IMPACT REPORT V1.2.5
+// POPUP.JS - POINT IMPACT REPORT V1.2.6
 // - Mematikan Popup secara Mutlak pada Kategori Harian (PNG Overlay)
 // - Mempertahankan Popup Interaktif & PDF pada Kategori Hazard & Risiko
 // ==========================================
@@ -17,7 +17,7 @@ function getAdminFeatureByLatLng(latlng) {
 }
 
 function getCoreParameterName(productConfig) {
-    let key = (typeof window.currentProductKey !== 'undefined') ? window.currentProductKey : '';
+    let key = (typeof window.currentProductKey !== 'undefined') ? window.currentProductKey : (typeof currentProductKey !== 'undefined' ? currentProductKey : '');
     if (key === 'suhu' || key.includes('suhu') || key.includes('heat')) return "Udara Panas";
     if (key === 'banjir' || key.includes('banjir')) return "Banjir";
     if (key === 'longsor' || key.includes('longsor')) return "Longsor";
@@ -67,11 +67,19 @@ function resolveHazardInfo(props, productConfig) {
 }
 
 /**
+ * PENGAMAN GLOBAL: Cek Apakah Kategori Saat Ini Adalah Harian (PNG Overlay)
+ */
+function isHarianCategory() {
+    let cat = (typeof currentCategory !== 'undefined') ? currentCategory : (typeof window.currentCategory !== 'undefined' ? window.currentCategory : '');
+    return cat === 'harian';
+}
+
+/**
  * ENTRY POINT KLIK POPUP (DILENGKAPI PENGUNCI HARIAN)
  */
 function showCustomPopup(clickEvent, feature, layer, productConfig, category, productKey, dayIndex) {
     // PENGUNCI MUTLAK 1: Matikan popup total jika berada di kategori harian
-    if (window.currentCategory === 'harian' || category === 'harian') return;
+    if (isHarianCategory() || category === 'harian' || window.currentCategory === 'harian') return;
     if (!clickEvent || !feature) return;
 
     let lat = clickEvent.latlng.lat;
@@ -108,9 +116,9 @@ function showCustomPopup(clickEvent, feature, layer, productConfig, category, pr
 }
 
 function bindFeaturePopup(hazardFeature, hazardLayer, productConfig, clickEvent) {
-    if (window.currentCategory === 'harian') return;
+    if (isHarianCategory() || window.currentCategory === 'harian') return;
     if (!clickEvent || !hazardFeature) return;
-    showCustomPopup(clickEvent, hazardFeature, hazardLayer, productConfig, window.currentCategory, window.currentProductKey, window.currentDayIndex);
+    showCustomPopup(clickEvent, hazardFeature, hazardLayer, productConfig, (typeof currentCategory !== 'undefined' ? currentCategory : window.currentCategory), (typeof currentProductKey !== 'undefined' ? currentProductKey : window.currentProductKey), (typeof currentIndex !== 'undefined' ? currentIndex : window.currentDayIndex));
 }
 
 /**
@@ -120,9 +128,12 @@ function generateGlobalPopup(e, adminFeature) {
     if (!e || !e.latlng) return;
 
     // PENGUNCI MUTLAK 2: Abaikan klik peta jika kategori harian aktif
-    if (window.currentCategory === 'harian') return;
+    if (isHarianCategory() || window.currentCategory === 'harian') return;
 
-    let productConfig = (typeof CONFIG !== 'undefined' && window.currentCategory && window.currentProductKey) ? CONFIG.products[window.currentCategory]?.[window.currentProductKey] : null;
+    let activeCat = (typeof currentCategory !== 'undefined') ? currentCategory : window.currentCategory;
+    let activeProd = (typeof currentProductKey !== 'undefined') ? currentProductKey : window.currentProductKey;
+
+    let productConfig = (typeof CONFIG !== 'undefined' && activeCat && activeProd) ? CONFIG.products[activeCat]?.[activeProd] : null;
 
     if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous')) {
         return; 
@@ -148,7 +159,7 @@ function generateGlobalPopup(e, adminFeature) {
 
 function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, parameterName, hexColor, dateVal, productConfig, lat, lon, isSafe) {
     let coordText = (typeof Utils !== 'undefined' && typeof Utils.formatKoordinat === 'function') ? `${Utils.formatKoordinat(lat, 'lat')}, ${Utils.formatKoordinat(lon, 'lon')}` : `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
-    let currentDayIdx = (typeof window.currentDayIndex !== 'undefined') ? window.currentDayIndex : 0;
+    let currentDayIdx = (typeof currentIndex !== 'undefined') ? currentIndex : ((typeof window.currentDayIndex !== 'undefined') ? window.currentDayIndex : 0);
     let dayLabelTag = `H${currentDayIdx === 0 ? '0' : '+' + currentDayIdx}`;
     
     let levelClass = isSafe ? 'badge-safe' : getLevelBadgeClass(levelVal);

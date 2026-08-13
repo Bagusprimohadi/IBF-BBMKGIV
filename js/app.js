@@ -1,12 +1,19 @@
 // ==========================================
-// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2
+// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2.3
+// - Supporting Dual Image Overlay (Shaded & Contour) + JSON Metadata
+// - Supporting Categorical GeoJSON Vector Layers
 // ==========================================
 
-// Variable State Aplikasi
+// Variable State Global Aplikasi
 let currentCategory = 'hazard';
 let currentProductKey = 'angin';
 let currentDayIndex = 0;
-let currentGeoJsonLayer = null;
+
+// Layer Active Handlers
+let currentGeoJsonLayer = null;      // Untuk Layer Vektor GeoJSON (Hazard / Risiko)
+let currentShadedOverlay = null;     // Untuk PNG Shaded Overlay (Harian)
+let currentContourOverlay = null;    // Untuk PNG Contour Overlay (Harian)
+let currentOverlayGroup = null;      // Group Container Dual PNG Overlay
 
 // ==========================================
 // FUNGSI KONTROL UI GLOBAL & DROPDOWN
@@ -58,56 +65,13 @@ function toggleMobilePanel() {
 }
 
 // ==========================================
-// LOGIKA BANTUAN DATA KONTINU (FITUR 1)
-// ==========================================
-
-/**
- * Mengonversi hex warna ke objek RGB
- */
-function hexToRgb(hex) {
-    let cleanHex = hex.replace('#', '');
-    if (cleanHex.length === 3) {
-        cleanHex = cleanHex.split('').map(c => c + c).join('');
-    }
-    const num = parseInt(cleanHex, 16);
-    return {
-        r: (num >> 16) & 255,
-        g: (num >> 8) & 255,
-        b: num & 255
-    };
-}
-
-/**
- * Menginterpolasi nilai numerik ke warna gradasi terikat min-max
- */
-function getColorFromRamp(value, min, max, colorRamp) {
-    if (value === null || value === undefined || isNaN(value)) return '#cbd5e1';
-    if (value <= min) return colorRamp[0];
-    if (value >= max) return colorRamp[colorRamp.length - 1];
-
-    const norm = (value - min) / (max - min);
-    const totalSegments = colorRamp.length - 1;
-    const segment = Math.min(Math.floor(norm * totalSegments), totalSegments - 1);
-    const segmentNorm = (norm * totalSegments) - segment;
-
-    const c1 = hexToRgb(colorRamp[segment]);
-    const c2 = hexToRgb(colorRamp[segment + 1]);
-
-    const r = Math.round(c1.r + (c2.r - c1.r) * segmentNorm);
-    const g = Math.round(c1.g + (c2.g - c1.g) * segmentNorm);
-    const b = Math.round(c1.b + (c2.b - c1.b) * segmentNorm);
-
-    return `rgb(${r}, ${g}, ${b})`;
-}
-
-// ==========================================
 // MANAGEMENT SWITCH PRODUCT & LOAD DATA
 // ==========================================
 
 /**
  * Mengganti produk aktif (Harian, Hazard, atau Risiko)
  * @param {string} category - 'harian' | 'hazard' | 'risiko'
- * @param {string} productKey - Kunci produk (contoh: 'swh', 'angin', 'risiko_banjir')
+ * @param {string} productKey - Kunci produk (contoh: 'swh', 'wind_mean', 'angin')
  */
 function switchProduct(category, productKey) {
     closeAllDropdowns();
@@ -145,21 +109,109 @@ function switchProduct(category, productKey) {
 }
 
 /**
- * Memuat file GeoJSON berdasarkan produk dan indeks hari
+ * Membersihkan seluruh layer aktif dari peta sebelum memuat data baru
+ */
+function clearAllMapLayers() {
+    if (!window.map) return;
+
+    // Hapus GeoJSON Vector Layer
+    if (currentGeoJsonLayer) {
+        window.map.removeLayer(currentGeoJsonLayer);
+        currentGeoJsonLayer = null;
+    }
+
+    // Hapus Dual PNG Image Overlay Group
+    if (currentOverlayGroup) {
+        window.map.removeLayer(currentOverlayGroup);
+        currentOverlayGroup = null;
+        currentShadedOverlay = null;
+        currentContourOverlay = null;
+    }
+}
+
+/**
+ * Memuat data berdasarkan tipe produk (Image Overlay Dual PNG vs GeoJSON Vector)
  * @param {number} dayIndex - Indeks hari (0 s/d 6)
  */
 function loadProductData(dayIndex) {
     currentDayIndex = dayIndex;
     const productCfg = CONFIG.products[currentCategory][currentProductKey];
-    const filePath = `${productCfg.folder}${productCfg.prefix}${dayIndex}${productCfg.extension}`;
 
     if (typeof showLoader === 'function') showLoader();
 
-    // Hapus layer lama jika ada
-    if (currentGeoJsonLayer && window.map) {
-        window.map.removeLayer(currentGeoJsonLayer);
-        currentGeoJsonLayer = null;
+    // Clear Layer Lama
+    clearAllMapLayers();
+
+    // BRANCHING ENGINE: IMAGE OVERLAY (PNG HARIAN) vs GEOJSON (HAZARD / RISIKO)
+    if (productCfg.type === 'image_overlay') {
+        loadDualImageOverlay(productCfg, dayIndex);
+    } else {
+        loadGeoJsonVector(productCfg, dayIndex);
     }
+}
+
+/**
+ * ENGINE 1: Memuat Dual PNG Image Overlay (Shaded & Contour) dengan Metadata JSON
+ */
+function loadDualImageOverlay(productCfg, dayIndex) {
+    const jsonPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}.json`;
+    const shadedPngPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}_shaded.png`;
+    const contourPngPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}_contour.png`;
+
+    fetch(jsonPath)
+        .then(response => {
+            if (!response.ok) throw new Error(`Gagal membaca metadata JSON: ${jsonPath}`);
+            return response.json();
+        })
+        .then(metaData => {
+            if (!window.map) return;
+
+            // Ekstraksi Bounding Box Leaflet dari JSON Metadata
+            let bounds = metaData.bounds?.leaflet_bounds;
+            if (!bounds) {
+                // Fallback Bounding Box Standar Indonesia jika JSON tidak punya leaflet_bounds
+                bounds = [[-11.0, 94.0], [6.0, 141.0]];
+            }
+
+            // Ambil nilai transparansi saat ini dari slider
+            const opacityInput = document.getElementById('opacityRange');
+            const currentOpacity = opacityInput ? parseFloat(opacityInput.value) / 100 : 0.65;
+
+            // 1. Layer Shaded (Area Warna Gradasi)
+            currentShadedOverlay = L.imageOverlay(shadedPngPath, bounds, {
+                opacity: currentOpacity,
+                interactive: false
+            });
+
+            // 2. Layer Contour (Garis Kontur & Label Nilai)
+            currentContourOverlay = L.imageOverlay(contourPngPath, bounds, {
+                opacity: Math.min(currentOpacity + 0.2, 1.0), // Kontur dibuat sedikit lebih tegas
+                interactive: false
+            });
+
+            // Gabungkan kedua PNG ke dalam LayerGroup
+            currentOverlayGroup = L.layerGroup([currentShadedOverlay, currentContourOverlay]).addTo(window.map);
+
+            // Update Tanggal Validitas Header
+            if (metaData.valid_time) {
+                updateValidDateTextWithDateStr(metaData.valid_time, dayIndex);
+            } else {
+                updateValidDateText(dayIndex);
+            }
+        })
+        .catch(err => {
+            console.warn(`⚠️ Gagal memuat Dual PNG Overlay: ${shadedPngPath}`, err);
+        })
+        .finally(() => {
+            if (typeof hideLoader === 'function') hideLoader();
+        });
+}
+
+/**
+ * ENGINE 2: Memuat Vektor GeoJSON Kategorikal (Hazard / Risiko)
+ */
+function loadGeoJsonVector(productCfg, dayIndex) {
+    const filePath = `${productCfg.folder}${productCfg.prefix}${dayIndex}${productCfg.extension || '.geojson'}`;
 
     fetch(filePath)
         .then(response => {
@@ -169,47 +221,25 @@ function loadProductData(dayIndex) {
         .then(data => {
             if (!window.map) return;
 
-            const isContinuous = productCfg.type === 'continuous';
-
             currentGeoJsonLayer = L.geoJSON(data, {
-                pointToLayer: function (feature, latlng) {
-                    if (isContinuous) {
-                        const val = feature.properties ? feature.properties.value : null;
-                        const fillColor = getColorFromRamp(val, productCfg.min, productCfg.max, productCfg.colorRamp);
-
-                        return L.circleMarker(latlng, {
-                            radius: 6,
-                            fillColor: fillColor,
-                            color: '#ffffff',
-                            weight: 0.8,
-                            opacity: 0.9,
-                            fillOpacity: 0.85
-                        });
-                    }
-                },
                 style: function (feature) {
-                    if (!isContinuous) {
-                        // Logic style polygon kategorikal (Hazard / Risiko)
-                        const level = feature.properties ? (feature.properties.status || feature.properties.level) : 'normal';
-                        const legendItem = productCfg.legends.find(l => l.level === level);
-                        const color = legendItem ? legendItem.color : 'transparent';
+                    const level = feature.properties ? (feature.properties.status || feature.properties.level) : 'normal';
+                    const legendItem = productCfg.legends ? productCfg.legends.find(l => l.level === level) : null;
+                    const color = legendItem ? legendItem.color : 'transparent';
 
-                        return {
-                            fillColor: color,
-                            fillOpacity: color === 'transparent' ? 0 : 0.65,
-                            weight: 1,
-                            color: '#475569',
-                            opacity: 0.5
-                        };
-                    }
+                    return {
+                        fillColor: color,
+                        fillOpacity: color === 'transparent' ? 0 : 0.65,
+                        weight: 1,
+                        color: '#475569',
+                        opacity: 0.5
+                    };
                 },
                 onEachFeature: function (feature, layer) {
-                    // Bind Hover Effect jika tersedia
                     if (typeof bindHoverEffect === 'function') {
                         bindHoverEffect(layer);
                     }
 
-                    // Bind Popup Interaktif
                     layer.on('click', function (e) {
                         if (typeof showCustomPopup === 'function') {
                             showCustomPopup(e, feature, layer, productCfg, currentCategory, currentProductKey, currentDayIndex);
@@ -219,20 +249,45 @@ function loadProductData(dayIndex) {
             }).addTo(window.map);
 
             // Terapkan transparansi slider jika ada
-            if (typeof updateOpacity === 'function') {
-                const rangeInput = document.getElementById('opacityRange');
-                if (rangeInput) updateOpacity(rangeInput.value);
+            const rangeInput = document.getElementById('opacityRange');
+            if (rangeInput && typeof updateOpacity === 'function') {
+                updateOpacity(rangeInput.value);
             }
 
             // Update Teks Tanggal Validitas Header
             updateValidDateText(dayIndex);
         })
         .catch(err => {
-            console.warn(`⚠️ Gagal memuat data: ${filePath}`, err);
+            console.warn(`⚠️ Gagal memuat data GeoJSON: ${filePath}`, err);
         })
         .finally(() => {
             if (typeof hideLoader === 'function') hideLoader();
         });
+}
+
+/**
+ * Pengontrol Transparansi Global (Mendukung PNG Overlay & GeoJSON Vector)
+ */
+function updateOpacity(val) {
+    const opacityVal = parseFloat(val) / 100;
+    const labelEl = document.getElementById('opacityVal');
+    if (labelEl) labelEl.innerText = `${val}%`;
+
+    // 1. Jika layer aktif adalah Dual PNG Overlay
+    if (currentShadedOverlay) {
+        currentShadedOverlay.setOpacity(opacityVal);
+    }
+    if (currentContourOverlay) {
+        currentContourOverlay.setOpacity(Math.min(opacityVal + 0.2, 1.0));
+    }
+
+    // 2. Jika layer aktif adalah GeoJSON Vector
+    if (currentGeoJsonLayer) {
+        currentGeoJsonLayer.setStyle({
+            fillOpacity: opacityVal,
+            opacity: Math.min(opacityVal + 0.2, 1.0)
+        });
+    }
 }
 
 /**
@@ -246,7 +301,7 @@ function updateHeaderInfo(title, subtitle) {
 }
 
 /**
- * Menyesuaikan Teks Validitas Tanggal Hari Ini s/d H+6
+ * Menyesuaikan Teks Validitas Tanggal Hari Ini s/d H+6 (Berdasarkan Indeks Hari)
  */
 function updateValidDateText(dayIndex) {
     const dateEl = document.getElementById('validDateText');
@@ -261,13 +316,28 @@ function updateValidDateText(dayIndex) {
     dateEl.innerText = `Valid: ${dateStr} (Hari H+${dayIndex})`;
 }
 
+/**
+ * Menyesuaikan Teks Validitas Tanggal Langsung dari Metadata JSON (`valid_time`)
+ */
+function updateValidDateTextWithDateStr(dateStrRaw, dayIndex) {
+    const dateEl = document.getElementById('validDateText');
+    if (!dateEl) return;
+
+    if (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') {
+        const formattedDate = Utils.formatTanggal(dateStrRaw);
+        dateEl.innerText = `Valid: ${formattedDate} (Hari H+${dayIndex})`;
+    } else {
+        dateEl.innerText = `Valid: ${dateStrRaw} (Hari H+${dayIndex})`;
+    }
+}
+
 
 // ==========================================
 // INISIALISASI SISTEM SAAT DOM SIAP
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("🚀 Menginisialisasi IBF WebGIS Operational System V1.2 - BBMKG IV...");
+    console.log("🚀 Menginisialisasi IBF WebGIS Operational System V1.2.3 - BBMKG IV...");
 
     // 1. Tampilkan indikator loading awal
     if (typeof showLoader === 'function') {
@@ -313,6 +383,6 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (typeof Loader !== 'undefined' && typeof Loader.hide === 'function') {
             Loader.hide();
         }
-        console.log("✅ IBF WebGIS V1.2 Berhasil Dimuat dan Siap Digunakan.");
+        console.log("✅ IBF WebGIS V1.2.3 Berhasil Dimuat dan Siap Digunakan.");
     }, 800);
 });

@@ -69,6 +69,16 @@
             </div>
         </div>
 
+        <!-- TOMBOL FITUR 2: PUSAT EDUKASI -->
+        <div class="dropdown-wrapper">
+            <button class="dropdown-btn btn-edukasi" onclick="openEdukasiModal()">📚 Pusat Edukasi</button>
+        </div>
+
+        <!-- TOMBOL FITUR 3: HOTLINE LIVE CS -->
+        <div class="dropdown-wrapper">
+            <a href="https://wa.me/6281141112221?text=Halo%20CS%20Peljas%20BBMKG4,%20saya%20ingin%20bertanya%20mengenai%20WebGIS%20IBF." target="_blank" class="dropdown-btn btn-hotline" style="text-decoration:none; text-align:center; display:block;">💬 Hotline CS</a>
+        </div>
+
         <!-- Tombol Fullscreen -->
         <div class="dropdown-wrapper">
             <button class="dropdown-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
@@ -116,6 +126,67 @@
             <div class="dev-watermark">Pengembang: Bagus Primohadi - BBMKG IV</div>
         </div>
     </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL POPUP PUSAT EDUKASI (FITUR 2)        -->
+    <!-- ========================================== -->
+    <div id="edukasiModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-box">
+                    <h3>📚 Pusat Edukasi Cara Baca Peta IBF</h3>
+                    <p>Pilih topik panduan di bawah ini:</p>
+                </div>
+                <button class="modal-close-btn" onclick="closeEdukasiModal()" title="Tutup">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="edukasi-list">
+                    <!-- Topik 1 -->
+                    <a href="docs/Panduan_Edukasi_1_Potensi_Bahaya_Angin_Kencang.pdf" target="_blank" class="edukasi-card">
+                        <div class="card-icon">💨</div>
+                        <div class="card-info">
+                            <strong>Panduan 1: Potensi Bahaya Angin Kencang</strong>
+                            <span>Cara membaca sebaran wilayah dan level peringatan angin kencang.</span>
+                        </div>
+                        <div class="card-arrow">↗</div>
+                    </a>
+
+                    <!-- Topik 2 -->
+                    <a href="docs/Panduan_Edukasi_2_Potensi_Bahaya_Udara_Panas.pdf" target="_blank" class="edukasi-card">
+                        <div class="card-icon">🔥</div>
+                        <div class="card-info">
+                            <strong>Panduan 2: Potensi Bahaya Udara Panas</strong>
+                            <span>Penjelasan tingkat stres suhu panas ekstrem (Heat Stress).</span>
+                        </div>
+                        <div class="card-arrow">↗</div>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <small>📍 File PDF tersimpan di repositori GitHub Pages.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- SKRIP KONTROL MODAL -->
+    <script>
+        function openEdukasiModal() {
+            document.getElementById('edukasiModal').style.display = 'flex';
+        }
+
+        function closeEdukasiModal() {
+            document.getElementById('edukasiModal').style.display = 'none';
+        }
+
+        window.addEventListener('click', function(event) {
+            let modal = document.getElementById('edukasiModal');
+            if (event.target === modal) {
+                closeEdukasiModal();
+            }
+        });
+    </script>
 
     <!-- LEAFLET JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

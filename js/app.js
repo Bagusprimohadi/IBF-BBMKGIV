@@ -1,20 +1,18 @@
 // ==========================================
-// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2.4
-// - Safe Global Scope Handling (Bypass Duplicate Variable Errors)
-// - Support Dual PNG Overlay (Shaded & Contour) + JSON Metadata
-// - Support GeoJSON Vector Layers (Hazard & Risiko)
+// APP.JS - ENTRY POINT UTAMA APLIKASI V1.2.5
+// - Hanya memuat Shaded PNG Overlay (Sesuai Permintaan)
+// - Integrasi fungsi loadDay(i) untuk Navigasi Tanggal H0 s/d H+6
+// - Bebas crash & terisolasi penuh dari kategori Hazard/Risiko
 // ==========================================
 
-// Inisialisasi State Global secara Aman (Menempel pada Window)
+// State Global Aplikasi (Attached to Window)
 window.currentCategory = window.currentCategory || 'hazard';
 window.currentProductKey = window.currentProductKey || 'angin';
 window.currentDayIndex = window.currentDayIndex || 0;
 
-// Active Layer Handlers
+// Layer Handlers
 window.currentGeoJsonLayer = window.currentGeoJsonLayer || null;
 window.currentShadedOverlay = window.currentShadedOverlay || null;
-window.currentContourOverlay = window.currentContourOverlay || null;
-window.currentOverlayGroup = window.currentOverlayGroup || null;
 
 // ==========================================
 // FUNGSI KONTROL UI GLOBAL
@@ -72,6 +70,7 @@ function switchProduct(category, productKey) {
     if (typeof renderDayButtons === 'function') renderDayButtons(productCfg.days || 7);
     if (typeof renderLegend === 'function') renderLegend(productCfg);
 
+    // Muat data untuk hari saat ini
     loadProductData(window.currentDayIndex);
 
     if (typeof UrlState !== 'undefined' && typeof UrlState.updateUrl === 'function') {
@@ -87,13 +86,20 @@ function clearAllMapLayers() {
         window.currentGeoJsonLayer = null;
     }
 
-    if (window.currentOverlayGroup) {
-        window.map.removeLayer(window.currentOverlayGroup);
-        window.currentOverlayGroup = null;
+    if (window.currentShadedOverlay) {
+        window.map.removeLayer(window.currentShadedOverlay);
         window.currentShadedOverlay = null;
-        window.currentContourOverlay = null;
     }
 }
+
+/**
+ * PUSAT NAVIGASI TANGGAL (Dipanggil oleh Tombol H0-H6 & Playback)
+ */
+function loadDay(dayIndex) {
+    loadProductData(dayIndex);
+}
+// Bridge ke objek window agar playback.js / timeline.js bisa memanggil fungsi ini
+window.loadDay = loadDay;
 
 function loadProductData(dayIndex) {
     window.currentDayIndex = dayIndex;
@@ -103,16 +109,18 @@ function loadProductData(dayIndex) {
     clearAllMapLayers();
 
     if (productCfg.type === 'image_overlay') {
-        loadDualImageOverlay(productCfg, dayIndex);
+        loadShadedImageOverlay(productCfg, dayIndex);
     } else {
         loadGeoJsonVector(productCfg, dayIndex);
     }
 }
 
-function loadDualImageOverlay(productCfg, dayIndex) {
+/**
+ * LOADER KHUSUS PNG HARIAN (Murni HANYA Shaded PNG)
+ */
+function loadShadedImageOverlay(productCfg, dayIndex) {
     const jsonPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}.json`;
     const shadedPngPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}_shaded.png`;
-    const contourPngPath = `${productCfg.folder}${productCfg.prefix}${dayIndex}_contour.png`;
 
     fetch(jsonPath)
         .then(response => {
@@ -122,15 +130,18 @@ function loadDualImageOverlay(productCfg, dayIndex) {
         .then(metaData => {
             if (!window.map) return;
 
+            // Ambil Leaflet Bounds dari Metadata JSON
             let bounds = metaData.bounds?.leaflet_bounds || [[-11.0, 94.0], [6.0, 141.0]];
             const opacityInput = document.getElementById('opacityRange');
             const currentOpacity = opacityInput ? parseFloat(opacityInput.value) / 100 : 0.65;
 
-            window.currentShadedOverlay = L.imageOverlay(shadedPngPath, bounds, { opacity: currentOpacity, interactive: false });
-            window.currentContourOverlay = L.imageOverlay(contourPngPath, bounds, { opacity: Math.min(currentOpacity + 0.2, 1.0), interactive: false });
+            // Tempelkan Peta Shaded PNG ke Leaflet
+            window.currentShadedOverlay = L.imageOverlay(shadedPngPath, bounds, {
+                opacity: currentOpacity,
+                interactive: false // Mematikan interaksi klik agar tidak memicu popup
+            }).addTo(window.map);
 
-            window.currentOverlayGroup = L.layerGroup([window.currentShadedOverlay, window.currentContourOverlay]).addTo(window.map);
-
+            // Update Tanggal Validitas
             if (metaData.valid_time) {
                 updateValidDateTextWithDateStr(metaData.valid_time, dayIndex);
             } else {
@@ -138,7 +149,7 @@ function loadDualImageOverlay(productCfg, dayIndex) {
             }
         })
         .catch(err => {
-            console.warn(`⚠️ Warning: Dual PNG Overlay tidak ditemukan`, err);
+            console.warn(`⚠️ Warning: Layer Shaded PNG Harian tidak ditemukan: ${shadedPngPath}`, err);
             updateValidDateText(dayIndex);
         })
         .finally(() => {
@@ -146,6 +157,9 @@ function loadDualImageOverlay(productCfg, dayIndex) {
         });
 }
 
+/**
+ * LOADER KHUSUS GEOJSON (Hazard & Risiko)
+ */
 function loadGeoJsonVector(productCfg, dayIndex) {
     const filePath = `${productCfg.folder}${productCfg.prefix}${dayIndex}${productCfg.extension || '.geojson'}`;
 
@@ -186,7 +200,6 @@ function updateOpacity(val) {
     if (labelEl) labelEl.innerText = `${val}%`;
 
     if (window.currentShadedOverlay) window.currentShadedOverlay.setOpacity(opacityVal);
-    if (window.currentContourOverlay) window.currentContourOverlay.setOpacity(Math.min(opacityVal + 0.2, 1.0));
     if (window.currentGeoJsonLayer) window.currentGeoJsonLayer.setStyle({ fillOpacity: opacityVal, opacity: Math.min(opacityVal + 0.2, 1.0) });
 }
 
@@ -221,7 +234,7 @@ function updateValidDateTextWithDateStr(dateStrRaw, dayIndex) {
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("🚀 Menginisialisasi IBF WebGIS Operational System V1.2.4 - BBMKG IV...");
+    console.log("🚀 Menginisialisasi IBF WebGIS Operational System V1.2.5 - BBMKG IV...");
 
     if (typeof showLoader === 'function') showLoader();
     else if (typeof Loader !== 'undefined' && typeof Loader.show === 'function') Loader.show("Menyiapkan Command Center WebGIS...");
@@ -247,6 +260,6 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => {
         if (typeof hideLoader === 'function') hideLoader();
         else if (typeof Loader !== 'undefined' && typeof Loader.hide === 'function') Loader.hide();
-        console.log("✅ IBF WebGIS V1.2.4 Berhasil Dimuat.");
+        console.log("✅ IBF WebGIS V1.2.5 Berhasil Dimuat.");
     }, 800);
 });

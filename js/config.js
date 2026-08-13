@@ -1,6 +1,7 @@
 // ==========================================
-// CONFIGURASI TERPUSAT WEBGIS IBF V1.2.1 (FIXED FULL DAYS H0 s/d H+6)
-// Arsitektur Root Repo & Ekstraksi Model Vektor (.geojson)
+// CONFIGURASI TERPUSAT WEBGIS IBF V1.2.3 (DUAL PNG OVERLAY + EXACT BMKG COLORMAPS)
+// - Updated parameter keys: wind_mean & current_speed_mean
+// - Updated exact BMKG HEX Color Palette & Levels
 // ==========================================
 
 const CONFIG = {
@@ -18,7 +19,7 @@ const CONFIG = {
 
     // Definisi Produk Berdasarkan Kategori (Harian, Hazard, & Risiko)
     products: {
-        // --- KATEGORI 1: INFO CUACA / LAUT HARIAN BIASA (FITUR 1 - KONTINU) ---
+        // --- KATEGORI 1: INFO CUACA / LAUT HARIAN BIASA (FITUR 1 - DUAL PNG OVERLAY) ---
         harian: {
             "swh": {
                 name: "Tinggi Gelombang",
@@ -26,27 +27,25 @@ const CONFIG = {
                 subtitle: "Prakiraan Tinggi Gelombang Signifikan Harian",
                 title: "Informasi Tinggi Gelombang Laut Indonesia",
                 prefix: "swh_day_",
-                extension: ".geojson",
                 days: 7,
-                type: "continuous",
+                type: "image_overlay",
                 unit: "m",
-                min: 0.0,
-                max: 4.0,
-                colorRamp: ["#0000ff", "#00ffff", "#00ff00", "#ffff00", "#ff0000"] // Biru -> Sian -> Hijau -> Kuning -> Merah
+                levels: [0.0, 1.25, 2.5, 4.0, 6.0, 9.0],
+                colorRamp: ["#87CEEB", "#FFFF00", "#FFA500", "#FF0000", "#800080"],
+                labels: ["0.0 - 1.25 m", "1.25 - 2.5 m", "2.5 - 4.0 m", "4.0 - 6.0 m", "6.0 - 9.0 m"]
             },
-            "wind_max": {
-                name: "Kecepatan Angin Maksimum",
-                folder: "data/raw/wind_max/",
-                subtitle: "Prakiraan Kecepatan Angin Maksimum Harian",
-                title: "Informasi Kecepatan Angin Maksimum Indonesia",
-                prefix: "wind_max_day_",
-                extension: ".geojson",
+            "wind_mean": {
+                name: "Kecepatan Angin Rata-Rata",
+                folder: "data/raw/wind_mean/",
+                subtitle: "Prakiraan Kecepatan Angin Rata-Rata Harian",
+                title: "Informasi Kecepatan Angin Rata-Rata Indonesia",
+                prefix: "wind_mean_day_",
                 days: 7,
-                type: "continuous",
+                type: "image_overlay",
                 unit: "knots",
-                min: 0.0,
-                max: 35.0,
-                colorRamp: ["#e0f2fe", "#38bdf8", "#0284c7", "#1e3a8a", "#7e22ce"] // Gradasi Angin Cerah ke Kencang
+                levels: [0, 5, 10, 15, 20, 25, 34, 48, 64, 100],
+                colorRamp: ["#ADD8E6", "#0000FF", "#90EE90", "#008000", "#FFFFE0", "#FFD700", "#FFA500", "#FF4500", "#8B0000"],
+                labels: ["0 - 5 kt", "5 - 10 kt", "10 - 15 kt", "15 - 20 kt", "20 - 25 kt", "25 - 34 kt", "34 - 48 kt", "48 - 64 kt", "> 64 kt"]
             },
             "tp_sum": {
                 name: "Akumulasi Curah Hujan",
@@ -54,27 +53,25 @@ const CONFIG = {
                 subtitle: "Prakiraan Akumulasi Curah Hujan 24 Jam",
                 title: "Informasi Akumulasi Curah Hujan Indonesia",
                 prefix: "tp_sum_day_",
-                extension: ".geojson",
                 days: 7,
-                type: "continuous",
+                type: "image_overlay",
                 unit: "mm",
-                min: 0.0,
-                max: 100.0,
-                colorRamp: ["#ffffff", "#86efac", "#22c55e", "#eab308", "#ef4444", "#a855f7"] // Putih -> Hijau -> Kuning -> Merah -> Ungu
+                levels: [0, 3, 20, 50, 100, 150],
+                colorRamp: ["#E0E0E0", "#00FF00", "#FFFF00", "#FFA500", "#FF0000"],
+                labels: ["0 - 3 mm", "3 - 20 mm", "20 - 50 mm", "50 - 100 mm", "100 - 150 mm"]
             },
-            "current_speed_max": {
+            "current_speed_mean": {
                 name: "Kecepatan Arus Permukaan",
-                folder: "data/raw/current_speed_max/",
+                folder: "data/raw/current_speed_mean/",
                 subtitle: "Prakiraan Kecepatan Arus Laut Permukaan",
                 title: "Informasi Kecepatan Arus Permukaan Laut Indonesia",
-                prefix: "current_speed_max_day_",
-                extension: ".geojson",
+                prefix: "current_speed_mean_day_",
                 days: 7,
-                type: "continuous",
+                type: "image_overlay",
                 unit: "m/s",
-                min: 0.0,
-                max: 1.5,
-                colorRamp: ["#f0fdf4", "#4ade80", "#0ea5e9", "#2563eb", "#1e1b4b"] // Hijau Muda -> Biru -> Biru Tua
+                levels: [0.0, 0.25, 0.5, 1.0, 1.5, 2.0, 3.0],
+                colorRamp: ["#00FF00", "#80FF00", "#FFFF00", "#FF8000", "#FF0000", "#800000"],
+                labels: ["0.0 - 0.25 m/s", "0.25 - 0.5 m/s", "0.5 - 1.0 m/s", "1.0 - 1.5 m/s", "1.5 - 2.0 m/s", "2.0 - 3.0 m/s"]
             },
             "tmax": {
                 name: "Suhu Udara Maksimum",
@@ -82,13 +79,12 @@ const CONFIG = {
                 subtitle: "Prakiraan Suhu Udara Maksimum Harian",
                 title: "Informasi Suhu Udara Maksimum Indonesia",
                 prefix: "tmax_day_",
-                extension: ".geojson",
                 days: 7,
-                type: "continuous",
+                type: "image_overlay",
                 unit: "°C",
-                min: 20.0,
-                max: 38.0,
-                colorRamp: ["#fef08a", "#f97316", "#dc2626", "#7f1d1d"] // Kuning -> Orange -> Merah -> Merah Gelap
+                levels: [20, 24, 28, 30, 32, 34, 36, 38, 40],
+                colorRamp: ["#FFFF00", "#FFD700", "#FFA500", "#FF7F00", "#FF4500", "#FF0000", "#C71585", "#8B4513"],
+                labels: ["20 - 24 °C", "24 - 28 °C", "28 - 30 °C", "30 - 32 °C", "32 - 34 °C", "34 - 36 °C", "36 - 38 °C", "38 - 40 °C"]
             },
             "tmin": {
                 name: "Suhu Udara Minimum",
@@ -96,13 +92,12 @@ const CONFIG = {
                 subtitle: "Prakiraan Suhu Udara Minimum Harian",
                 title: "Informasi Suhu Udara Minimum Indonesia",
                 prefix: "tmin_day_",
-                extension: ".geojson",
                 days: 7,
-                type: "continuous",
+                type: "image_overlay",
                 unit: "°C",
-                min: 16.0,
-                max: 28.0,
-                colorRamp: ["#38bdf8", "#818cf8", "#a855f7", "#e11d48"] // Biru Muda -> Nila -> Ungu -> Merah Muda
+                levels: [10, 14, 18, 20, 22, 24, 26, 28, 30],
+                colorRamp: ["#00008B", "#0080FF", "#40E0D0", "#80E8A0", "#FFFF00", "#FFC000", "#FFA500", "#FF4500"],
+                labels: ["10 - 14 °C", "14 - 18 °C", "18 - 20 °C", "20 - 22 °C", "22 - 24 °C", "24 - 26 °C", "26 - 28 °C", "28 - 30 °C"]
             }
         },
 

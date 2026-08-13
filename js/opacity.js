@@ -1,9 +1,11 @@
 // ==========================================
-// OPACITY.JS - KONTROL TRANSPARANSI SMOOTH V1.2
+// OPACITY.JS - KONTROL TRANSPARANSI SMOOTH V1.2.1
+// - Mendukung GeoJSON Vector Layer (Hazard & Risiko)
+// - Mendukung PNG Shaded Overlay (Info Cuaca / Laut Harian)
 // ==========================================
 
 /**
- * Mengubah tingkat transparansi (opacity) overlay layer GeoJSON
+ * Mengubah tingkat transparansi (opacity) overlay layer aktif (GeoJSON / PNG)
  * @param {string|number} val - Nilai persentase dari slider (0 hingga 100)
  */
 function updateOpacity(val) {
@@ -27,16 +29,20 @@ function updateOpacity(val) {
 
     // 5. Terapkan transparansi ke layer GeoJSON yang sedang aktif
     if (typeof activeOverlayLayer !== 'undefined' && activeOverlayLayer) {
-        // Terapkan ke LayerGroup / GeoJSON Layer
         if (typeof activeOverlayLayer.setStyle === 'function') {
             activeOverlayLayer.setStyle({
                 fillOpacity: decimalOpacity,
                 opacity: Math.min(decimalOpacity + 0.2, 1) // Outline tetap sedikit lebih tegas
             });
-        } 
-        // Jika berupa TileLayer / Raster
-        else if (typeof activeOverlayLayer.setOpacity === 'function') {
+        } else if (typeof activeOverlayLayer.setOpacity === 'function') {
             activeOverlayLayer.setOpacity(decimalOpacity);
+        }
+    }
+
+    // 6. Terapkan transparansi ke PNG Image Overlay (Info Cuaca/Laut Harian) yang sedang aktif
+    if (typeof activeImageOverlay !== 'undefined' && activeImageOverlay) {
+        if (typeof activeImageOverlay.setOpacity === 'function') {
+            activeImageOverlay.setOpacity(decimalOpacity);
         }
     }
 }

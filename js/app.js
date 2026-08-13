@@ -2,18 +2,19 @@
 // APP.JS - ENTRY POINT UTAMA APLIKASI V1.2.3
 // - Supporting Dual Image Overlay (Shaded & Contour) + JSON Metadata
 // - Supporting Categorical GeoJSON Vector Layers
+// - FIX: Menggunakan 'var' untuk mencegah bentrok "already been declared"
 // ==========================================
 
-// Variable State Global Aplikasi
-let currentCategory = 'hazard';
-let currentProductKey = 'angin';
-let currentDayIndex = 0;
+// Variable State Global Aplikasi (Menggunakan 'var' agar tidak crash jika script termuat 2x)
+var currentCategory = 'hazard';
+var currentProductKey = 'angin';
+var currentDayIndex = 0;
 
 // Layer Active Handlers
-let currentGeoJsonLayer = null;      // Untuk Layer Vektor GeoJSON (Hazard / Risiko)
-let currentShadedOverlay = null;     // Untuk PNG Shaded Overlay (Harian)
-let currentContourOverlay = null;    // Untuk PNG Contour Overlay (Harian)
-let currentOverlayGroup = null;      // Group Container Dual PNG Overlay
+var currentGeoJsonLayer = null;      // Untuk Layer Vektor GeoJSON (Hazard / Risiko)
+var currentShadedOverlay = null;     // Untuk PNG Shaded Overlay (Harian)
+var currentContourOverlay = null;    // Untuk PNG Contour Overlay (Harian)
+var currentOverlayGroup = null;      // Group Container Dual PNG Overlay
 
 // ==========================================
 // FUNGSI KONTROL UI GLOBAL & DROPDOWN
@@ -201,6 +202,8 @@ function loadDualImageOverlay(productCfg, dayIndex) {
         })
         .catch(err => {
             console.warn(`⚠️ Gagal memuat Dual PNG Overlay: ${shadedPngPath}`, err);
+            // Fallback teks tanggal agar aplikasi tidak macet loading
+            updateValidDateText(dayIndex);
         })
         .finally(() => {
             if (typeof hideLoader === 'function') hideLoader();
@@ -361,11 +364,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof initScaleBar === 'function') initScaleBar();
     if (typeof initSearchControl === 'function') initSearchControl();
 
-    // 4. Tangani State awal aplikasi dari URL atau muat produk default (Harian: SWH)
+    // 4. Tangani State awal aplikasi dari URL atau muat produk default 
+    // MENGUBAH DEFAULT KE HAZARD ANGIN (Agar jika data harian kosong, sistem tidak macet)
     if (typeof UrlState !== 'undefined' && typeof UrlState.applyInitialState === 'function') {
         UrlState.applyInitialState();
     } else {
-        switchProduct('harian', 'swh');
+        switchProduct('hazard', 'angin');
     }
 
     // Otomatis minimalkan panel jika dibuka lewat HP (layar <= 767px)

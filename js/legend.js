@@ -1,11 +1,11 @@
 // ==========================================
-// LEGEND.JS - PENGATUR KOTAK LEGENDA DINAMIS & COLLAPSIBLE V1.3
+// LEGEND.JS - PENGATUR KOTAK LEGENDA DINAMIS & COLLAPSIBLE V1.2
+// - Support Kategori Kategorikal & Gradasi Kontinu (Fitur 1)
 // - Support Dynamic Time-Range Tagging (H-1 to H+5 vs H0 to H+6)
-// - Seamless Collapsible Integration & Transparent Filtering
 // ==========================================
 
 /**
- * Merender daftar legenda berdasarkan konfigurasi produk aktif (GeoJSON)
+ * Merender daftar legenda berdasarkan konfigurasi produk aktif (Kategorikal atau Kontinu)
  * @param {Object} productConfig - Konfigurasi produk dari CONFIG.products
  */
 function renderLegend(productConfig) {
@@ -14,13 +14,13 @@ function renderLegend(productConfig) {
 
     legendBox.innerHTML = "";
 
-    // Membaca array legends dari CONFIG (dukungan fallback ke productConfig.legend)
-    const legendData = productConfig?.legends || productConfig?.legend;
-
-    if (!legendData || !Array.isArray(legendData) || legendData.length === 0) {
+    if (!productConfig) {
         legendBox.innerHTML = "<div style='font-size:11px; color:#94a3b8;'>Legenda tidak tersedia.</div>";
         return;
     }
+
+    // Cek apakah produk aktif berjenis kontinu (Fitur 1) atau kategorikal
+    const isContinuous = productConfig.type === 'continuous';
 
     // Cek apakah produk aktif termasuk dalam 4 parameter khusus (Banjir & Longsor)
     let prodKey = typeof currentProductKey !== 'undefined' ? currentProductKey : '';
@@ -38,7 +38,51 @@ function renderLegend(productConfig) {
     `;
     legendBox.appendChild(headerDiv);
 
-    // Susun item legenda berdasarkan array warna dan label
+    // --- RENDER LEGENDA KONTINU (FITUR 1) ---
+    if (isContinuous) {
+        let ramp = productConfig.colorRamp || ["#0000ff", "#00ffff", "#00ff00", "#ffff00", "#ff0000"];
+        let minVal = productConfig.min !== undefined ? productConfig.min : 0;
+        let maxVal = productConfig.max !== undefined ? productConfig.max : 100;
+        let unit = productConfig.unit || '';
+
+        // Buat kontainer color bar gradasi
+        let continuousContainer = document.createElement('div');
+        continuousContainer.style.cssText = 'margin-top: 6px; padding: 4px 0;';
+
+        // Bar Gradasi CSS Linear Gradient
+        let colorBar = document.createElement('div');
+        colorBar.style.cssText = `
+            width: 100%;
+            height: 14px;
+            border-radius: 4px;
+            background: linear-gradient(to right, ${ramp.join(', ')});
+            border: 1px solid #cbd5e1;
+            margin-bottom: 4px;
+        `;
+
+        // Label Min & Max di bawah bar
+        let labelsRow = document.createElement('div');
+        labelsRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: #475569;';
+        labelsRow.innerHTML = `
+            <span>${minVal} ${unit}</span>
+            <span style="color: #0284c7; text-transform: uppercase;">Rentang Nilai</span>
+            <span>${maxVal} ${unit}</span>
+        `;
+
+        continuousContainer.appendChild(colorBar);
+        continuousContainer.appendChild(labelsRow);
+        legendBox.appendChild(continuousContainer);
+        return;
+    }
+
+    // --- RENDER LEGENDA KATEGORIKAL (HAZARD / RISIKO) ---
+    const legendData = productConfig?.legends || productConfig?.legend;
+
+    if (!legendData || !Array.isArray(legendData) || legendData.length === 0) {
+        legendBox.innerHTML += "<div style='font-size:11px; color:#94a3b8;'>Legenda kategori tidak tersedia.</div>";
+        return;
+    }
+
     legendData.forEach(item => {
         // Abaikan warna transparent agar panel legenda tetap bersih
         if (item.color === 'transparent') return;

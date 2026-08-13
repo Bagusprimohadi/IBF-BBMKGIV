@@ -1,13 +1,9 @@
 // ==========================================
-// POPUP.JS - POINT IMPACT REPORT V1.2.3
-// - Membatasi Popup Khusus untuk Layer Vektor GeoJSON (Hazard & Risiko)
-// - Mem-bypass Popup pada Layer Dual PNG Overlay (Info Harian)
-// - Menyediakan Ekspor PDF Eksklusif Peringatan Dini Bencana
+// POPUP.JS - POINT IMPACT REPORT V1.2.5
+// - Mematikan Popup secara Mutlak pada Kategori Harian (PNG Overlay)
+// - Mempertahankan Popup Interaktif & PDF pada Kategori Hazard & Risiko
 // ==========================================
 
-/**
- * FUNGSI BANTUAN 1: Mencari data kabupaten dari layer dasar jika hazard tidak punya nama wilayah
- */
 function getAdminFeatureByLatLng(latlng) {
     let foundFeature = null;
     if (typeof kabupatenLayerBase !== 'undefined' && kabupatenLayerBase) {
@@ -20,11 +16,8 @@ function getAdminFeatureByLatLng(latlng) {
     return foundFeature;
 }
 
-/**
- * FUNGSI BANTUAN 2: Mendapatkan Nama Parameter Utama yang Konsisten Berdasarkan Produk Aktif
- */
 function getCoreParameterName(productConfig) {
-    let key = (typeof currentProductKey !== 'undefined') ? currentProductKey : '';
+    let key = (typeof window.currentProductKey !== 'undefined') ? window.currentProductKey : '';
     if (key === 'suhu' || key.includes('suhu') || key.includes('heat')) return "Udara Panas";
     if (key === 'banjir' || key.includes('banjir')) return "Banjir";
     if (key === 'longsor' || key.includes('longsor')) return "Longsor";
@@ -41,14 +34,7 @@ function getCoreParameterName(productConfig) {
     return "Analisis Dampak Bencana";
 }
 
-/**
- * FUNGSI BANTUAN 3: Mencocokkan Data Poligon dengan Konfigurasi Legenda secara Akurat (Hazard/Risiko)
- */
 function resolveHazardInfo(props, productConfig) {
-    if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous')) {
-        return { isContinuous: true, isSafe: true };
-    }
-
     let textKey = String(props.kategori || props.level || props.code || '').toLowerCase().trim();
     let colorKey = String(props.color || props.hex_color || '').toUpperCase().trim();
     
@@ -81,17 +67,12 @@ function resolveHazardInfo(props, productConfig) {
 }
 
 /**
- * ==========================================
- * 1. ENTRY POINT KLIK POPUP UNTUK LAYER VEKTOR (HAZARD / RISIKO)
- * ==========================================
+ * ENTRY POINT KLIK POPUP (DILENGKAPI PENGUNCI HARIAN)
  */
 function showCustomPopup(clickEvent, feature, layer, productConfig, category, productKey, dayIndex) {
+    // PENGUNCI MUTLAK 1: Matikan popup total jika berada di kategori harian
+    if (window.currentCategory === 'harian' || category === 'harian') return;
     if (!clickEvent || !feature) return;
-
-    // KUNCI PENGAMAN: Jangan tampilkan popup jika produk bertipe PNG Overlay / Harian
-    if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous')) {
-        return;
-    }
 
     let lat = clickEvent.latlng.lat;
     let lon = clickEvent.latlng.lng;
@@ -123,27 +104,27 @@ function showCustomPopup(clickEvent, feature, layer, productConfig, category, pr
 
     let parameterName = getCoreParameterName(productConfig);
 
-    // Render Popup untuk Hazard/Risiko
     renderUniversalPopup(clickEvent.latlng, rawWilayah, rawProvinsi, kodeWilayah, hazardInfo.label, parameterName, hazardInfo.color, dateVal, productConfig, lat, lon, hazardInfo.isSafe);
 }
 
-/**
- * ==========================================
- * 2. KOMPATIBILITAS (UNTUK HOVER.JS / OVERLAY.JS)
- * ==========================================
- */
 function bindFeaturePopup(hazardFeature, hazardLayer, productConfig, clickEvent) {
+    if (window.currentCategory === 'harian') return;
     if (!clickEvent || !hazardFeature) return;
-    showCustomPopup(clickEvent, hazardFeature, hazardLayer, productConfig, currentCategory, currentProductKey, currentDayIndex);
+    showCustomPopup(clickEvent, hazardFeature, hazardLayer, productConfig, window.currentCategory, window.currentProductKey, window.currentDayIndex);
 }
 
+/**
+ * ENTRY POINT KLIK PETA GLOBAL (DILENGKAPI PENGUNCI HARIAN)
+ */
 function generateGlobalPopup(e, adminFeature) {
     if (!e || !e.latlng) return;
 
-    let productConfig = (typeof CONFIG !== 'undefined' && currentCategory && currentProductKey) ? CONFIG.products[currentCategory]?.[currentProductKey] : null;
+    // PENGUNCI MUTLAK 2: Abaikan klik peta jika kategori harian aktif
+    if (window.currentCategory === 'harian') return;
 
-    // KUNCI PENGAMAN: Jika layer berupa PNG Overlay (Harian), Batal Tampilkan Popup
-    if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous' || currentCategory === 'harian')) {
+    let productConfig = (typeof CONFIG !== 'undefined' && window.currentCategory && window.currentProductKey) ? CONFIG.products[window.currentCategory]?.[window.currentProductKey] : null;
+
+    if (productConfig && (productConfig.type === 'image_overlay' || productConfig.type === 'continuous')) {
         return; 
     }
 
@@ -165,14 +146,9 @@ function generateGlobalPopup(e, adminFeature) {
     renderUniversalPopup(e.latlng, rawWilayah, rawProvinsi, kodeWilayah, "AMAN / NORMAL", parameterName, "#10b981", dateVal, productConfig, lat, lon, true);
 }
 
-/**
- * ==========================================
- * 3. RENDERER UTAMA (TABEL UNIFIED PERINGATAN DINI)
- * ==========================================
- */
 function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, parameterName, hexColor, dateVal, productConfig, lat, lon, isSafe) {
     let coordText = (typeof Utils !== 'undefined' && typeof Utils.formatKoordinat === 'function') ? `${Utils.formatKoordinat(lat, 'lat')}, ${Utils.formatKoordinat(lon, 'lon')}` : `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
-    let currentDayIdx = (typeof currentDayIndex !== 'undefined') ? currentDayIndex : 0;
+    let currentDayIdx = (typeof window.currentDayIndex !== 'undefined') ? window.currentDayIndex : 0;
     let dayLabelTag = `H${currentDayIdx === 0 ? '0' : '+' + currentDayIdx}`;
     
     let levelClass = isSafe ? 'badge-safe' : getLevelBadgeClass(levelVal);
@@ -241,7 +217,6 @@ function renderUniversalPopup(latlng, wilayah, provinsi, kodeWilayah, levelVal, 
     }
 }
 
-// Helpers
 function getLevelBadgeClass(levelText) {
     let text = String(levelText).toLowerCase();
     if (text.includes("waspada")) return "badge-waspada";

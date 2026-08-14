@@ -3,6 +3,7 @@
 // - Updated parameter keys: wind_mean & current_speed_mean
 // - Updated exact BMKG HEX Color Palette & Levels
 // - Added Parameter: Potensi Bahaya Hipotermia (IBF SEMERU)
+// - Added Parameter: Potensi Bahaya Puting Beliung (IBF SIPPUNG)
 // ==========================================
 
 const CONFIG = {
@@ -220,6 +221,23 @@ const CONFIG = {
                     { color: "#FF0000", label: "Siaga (Potensi Hipotermia Menengah)", level: "siaga_hipo" },
                     { color: "#FFA500", label: "Waspada (Potensi Hipotermia Rendah)", level: "waspada_hipo" },
                     { color: "#FFFFFF", label: "Aman (Tidak Ada Risiko Signifikan)", level: "aman_hipo" }
+                ]
+            },
+            // TAMBAHAN BARU: POTENSI BAHAYA PUTING BELIUNG (IBF SIPPUNG)
+            "tornado": {
+                name: "Puting Beliung / Whirlwind",
+                folder: "data/hazard/tornado/",
+                subtitle: "IBF SIPPUNG : Early Warning for Whirlwind & Waterspout Risk Update",
+                title: "Prediksi Potensi Bahaya Puting Beliung Indonesia",
+                prefix: "tornado_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "categorical",
+                legends: [
+                    { color: "#FF0000", label: "Awas (Potensi Peluang Tinggi)", level: "awas_tornado" },
+                    { color: "#FFA500", label: "Siaga (Potensi Peluang Sedang)", level: "siaga_tornado" },
+                    { color: "#FFFF00", label: "Waspada (Potensi Peluang Kecil)", level: "waspada_tornado" },
+                    { color: "#FFFFFF", label: "Aman (Tidak Ada Potensi)", level: "aman_tornado" }
                 ]
             }
         },

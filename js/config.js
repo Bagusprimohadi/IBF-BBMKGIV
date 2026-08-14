@@ -1,7 +1,8 @@
 // ==========================================
-// CONFIGURASI TERPUSAT WEBGIS IBF V1.2.3 (DUAL PNG OVERLAY + EXACT BMKG COLORMAPS)
+// CONFIGURASI TERPUSAT WEBGIS IBF V1.2.4 (DUAL PNG OVERLAY + EXACT BMKG COLORMAPS)
 // - Updated parameter keys: wind_mean & current_speed_mean
 // - Updated exact BMKG HEX Color Palette & Levels
+// - Added Parameter: Potensi Bahaya Hipotermia (IBF SEMERU)
 // ==========================================
 
 const CONFIG = {
@@ -84,7 +85,7 @@ const CONFIG = {
                 unit: "°C",
                 levels: [20, 24, 28, 30, 32, 34, 36, 38, 40],
                 colorRamp: ["#FFFF00", "#FFD700", "#FFA500", "#FF7F00", "#FF4500", "#FF0000", "#C71585", "#8B4513"],
-                labels: ["20 - 24 °C", "24 - 28 °C", "28 - 30 °C", "30 - 32 °C", "32 - 34 °C", "34 - 36 °C", "36 - 38 °C", "38 - 40 °C"]
+                labels: ["20 - 24 °C", "24 - 28 °C", "28 - 30 °C", "30 - 32 °C", "32 - 34 °C", "36 - 38 °C", "38 - 40 °C"]
             },
             "tmin": {
                 name: "Suhu Udara Minimum",
@@ -202,6 +203,23 @@ const CONFIG = {
                     { color: "#FFFF00", label: "Waspada Aktivitas Diving", level: "waspada" },
                     { color: "#FFA500", label: "Siaga Aktivitas Diving", level: "siaga" },
                     { color: "#FF0000", label: "Berbahaya / Awas", level: "awas" }
+                ]
+            },
+            // TAMBAHAN BARU: POTENSI BAHAYA HIPOTERMIA (IBF SEMERU)
+            "hypo": {
+                name: "Hipotermia Pegunungan",
+                folder: "data/hazard/hypo/",
+                subtitle: "IBF SEMERU : Safety & Early Warning for Mountain Environment Risk Update",
+                title: "Prediksi Potensi Bahaya Hipotermia Indonesia",
+                prefix: "hipo_day_",
+                extension: ".geojson",
+                days: 7,
+                type: "categorical",
+                legends: [
+                    { color: "#8B008B", label: "Bahaya (Potensi Hipotermia Tinggi)", level: "bahaya" },
+                    { color: "#FF0000", label: "Siaga (Potensi Hipotermia Menengah)", level: "siaga" },
+                    { color: "#FFA500", label: "Waspada (Potensi Hipotermia Rendah)", level: "waspada" },
+                    { color: "#FFFFFF", label: "Aman (Tidak Ada Risiko Signifikan)", level: "aman" }
                 ]
             }
         },

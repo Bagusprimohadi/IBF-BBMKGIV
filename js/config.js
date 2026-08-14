@@ -216,10 +216,10 @@ const CONFIG = {
                 days: 7,
                 type: "categorical",
                 legends: [
-                    { color: "#8B008B", label: "Bahaya (Potensi Hipotermia Tinggi)", level: "bahaya" },
-                    { color: "#FF0000", label: "Siaga (Potensi Hipotermia Menengah)", level: "siaga" },
-                    { color: "#FFA500", label: "Waspada (Potensi Hipotermia Rendah)", level: "waspada" },
-                    { color: "#FFFFFF", label: "Aman (Tidak Ada Risiko Signifikan)", level: "aman" }
+                    { color: "#8B008B", label: "Bahaya (Potensi Hipotermia Tinggi)", level: "awas_hipo" },
+                    { color: "#FF0000", label: "Siaga (Potensi Hipotermia Menengah)", level: "siaga_hipo" },
+                    { color: "#FFA500", label: "Waspada (Potensi Hipotermia Rendah)", level: "waspada_hipo" },
+                    { color: "#FFFFFF", label: "Aman (Tidak Ada Risiko Signifikan)", level: "aman_hipo" }
                 ]
             }
         },

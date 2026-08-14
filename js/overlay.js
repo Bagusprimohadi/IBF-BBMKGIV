@@ -1,10 +1,10 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & PNG OVERLAY V1.2.1
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & PNG OVERLAY V1.2.2
 // - Support Full 7-Days Timeline
 // - Specific Offset Labeling for Banjir & Longsor (H-1 to H+5)
 // - Support Dual-Engine: GeoJSON Vector & Shaded PNG Overlay
 // - Support Real-Time Opacity Slider (GeoJSON & Image Overlay)
-// - Graceful Fallback & Error Handling
+// - FIXED: Tampilan Tanggal Presisi & Bersih (Tanpa Teks "Data Kosong")
 // ==========================================
 
 let currentCategory = 'hazard'; 
@@ -151,6 +151,12 @@ function loadDay(index) {
     if (typeof showLoader === 'function') showLoader();
 
     // ==========================================
+    // PERHITUNGAN OFFSET TANGGAL (Untuk Fallback)
+    // ==========================================
+    let isOffsetProduct = ['banjir', 'longsor', 'risiko_banjir', 'risiko_longsor'].includes(currentProductKey);
+    let dayShift = isOffsetProduct ? (index - 1) : index;
+
+    // ==========================================
     // CABANG 1: JIKA TIPE PRODUK = IMAGE_OVERLAY (PNG HARIAN)
     // ==========================================
     if (productConfig.type === 'image_overlay') {
@@ -165,25 +171,28 @@ function loadDay(index) {
             .then(metaData => {
                 let bounds = metaData?.bounds?.leaflet_bounds || [[-11.0, 94.0], [6.0, 141.0]];
 
-                // Baca transparansi saat ini dari slider (jika ada)
                 let opacityInput = document.getElementById('opacityRange');
                 if (opacityInput) {
                     currentOpacity = parseFloat(opacityInput.value) / 100;
                 }
 
-                // Tempelkan PNG Shaded ke peta dengan nilai currentOpacity aktif
                 activeImageOverlay = L.imageOverlay(shadedPath, bounds, {
                     opacity: currentOpacity,
-                    interactive: false // Mematikan interaksi agar tidak memicu popup
+                    interactive: false 
                 }).addTo(map);
 
-                // Update teks tanggal dari metadata JSON
+                // Menampilkan Tanggal dengan Rapi (Tanpa Teks Data Kosong)
                 if (metaData.valid_time && dateTextEl) {
                     dateTextEl.innerText = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') 
                         ? `Valid: ${Utils.formatTanggal(metaData.valid_time)}`
                         : `Valid: ${metaData.valid_time}`;
                 } else if (dateTextEl) {
-                    dateTextEl.innerText = `Valid: Prediksi Hari ke-${index + 1}`;
+                    let targetDate = new Date();
+                    targetDate.setDate(targetDate.getDate() + dayShift);
+                    let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
+                        ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
+                        : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    dateTextEl.innerText = `Valid: ${formattedDate}`;
                 }
 
                 keepAdminBoundariesOnTop();
@@ -192,7 +201,14 @@ function loadDay(index) {
             })
             .catch(err => {
                 console.warn("Peringatan PNG Overlay:", err.message);
-                if (dateTextEl) dateTextEl.innerText = `⚠️ Data PNG Hari ke-${index + 1} Belum Tersedia`;
+                if (dateTextEl) {
+                    let targetDate = new Date();
+                    targetDate.setDate(targetDate.getDate() + dayShift);
+                    let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
+                        ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
+                        : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    dateTextEl.innerText = `Valid: ${formattedDate}`;
+                }
                 updateActiveDayButtonUI(productConfig, index);
                 if (typeof hideLoader === 'function') hideLoader();
             });
@@ -212,22 +228,26 @@ function loadDay(index) {
             return res.json();
         })
         .then(geojsonData => {
+            let polyDate = null;
             if (geojsonData.features && geojsonData.features.length > 0) {
                 let firstProps = geojsonData.features[0].properties;
-                let polyDate = firstProps.date || firstProps.tanggal || firstProps.validity || firstProps.valid_date;
-
-                if (polyDate && dateTextEl && typeof Utils !== 'undefined') {
-                    dateTextEl.innerText = `Valid: ${Utils.formatTanggal(polyDate)}`;
-                } else if (window.validDates && window.validDates[index] && dateTextEl) {
-                    dateTextEl.innerText = `Valid: ${window.validDates[index]}`;
-                } else if (dateTextEl) {
-                    dateTextEl.innerText = `Valid: Prediksi Hari ke-${index + 1}`;
-                }
-            } else {
-                if (dateTextEl) dateTextEl.innerText = `Valid: Hari ke-${index + 1} (Data Kosong)`;
+                polyDate = firstProps.date || firstProps.tanggal || firstProps.validity || firstProps.valid_date;
             }
 
-            // Baca transparansi saat ini dari slider (jika ada)
+            // Menampilkan Tanggal dengan Rapi (Tanpa Teks Data Kosong)
+            if (polyDate && dateTextEl && typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') {
+                dateTextEl.innerText = `Valid: ${Utils.formatTanggal(polyDate)}`;
+            } else if (window.validDates && window.validDates[index] && dateTextEl) {
+                dateTextEl.innerText = `Valid: ${window.validDates[index]}`;
+            } else if (dateTextEl) {
+                let targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + dayShift);
+                let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
+                    ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
+                    : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                dateTextEl.innerText = `Valid: ${formattedDate}`;
+            }
+
             let opacityInput = document.getElementById('opacityRange');
             if (opacityInput) {
                 currentOpacity = parseFloat(opacityInput.value) / 100;
@@ -238,7 +258,7 @@ function loadDay(index) {
                     let fillColor = getFeatureColor(feature, productConfig);
                     return {
                         fillColor: fillColor,
-                        stroke: false, // OFF-kan borderline poligon hazard
+                        stroke: false, 
                         weight: 0,
                         fillOpacity: currentOpacity 
                     };
@@ -264,7 +284,6 @@ function loadDay(index) {
                 }
             }).addTo(map);
 
-            // Layer maritim ditaruh di paling belakang
             if (currentProductKey.includes('snorkling') || currentProductKey.includes('diving')) {
                 activeOverlayLayer.bringToBack();
             }
@@ -275,12 +294,14 @@ function loadDay(index) {
         })
         .catch(err => {
             console.warn("Peringatan pemuatan GeoJSON:", err.message);
+            // Tetap merender tanggal secara bersih jika file kosong/tidak ada (404)
             if (dateTextEl) {
-                if (window.validDates && window.validDates[index]) {
-                    dateTextEl.innerText = `Valid: ${window.validDates[index]} (Data Belum Tersedia)`;
-                } else {
-                    dateTextEl.innerText = `⚠️ Data Hari ke-${index + 1} Belum Tersedia`;
-                }
+                let targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + dayShift);
+                let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
+                    ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
+                    : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                dateTextEl.innerText = `Valid: ${formattedDate}`;
             }
 
             updateActiveDayButtonUI(productConfig, index);
@@ -313,12 +334,10 @@ function updateOpacity(val) {
         labelEl.innerText = `${val}%`;
     }
 
-    // 1. Ubah transparansi PNG Overlay jika sedang aktif
     if (activeImageOverlay) {
         activeImageOverlay.setOpacity(currentOpacity);
     }
 
-    // 2. Ubah transparansi GeoJSON Vector jika sedang aktif
     if (activeOverlayLayer) {
         activeOverlayLayer.setStyle({
             fillOpacity: currentOpacity
@@ -326,5 +345,4 @@ function updateOpacity(val) {
     }
 }
 
-// Hubungkan ke window global agar bisa dipanggil langsung oleh event oninput HTML slider
 window.updateOpacity = updateOpacity;

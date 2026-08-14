@@ -1,10 +1,10 @@
 // ==========================================
-// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & PNG OVERLAY V1.2.2
+// OVERLAY.JS - MANAJEMEN LAYER GEOJSON & PNG OVERLAY V1.2.3
 // - Support Full 7-Days Timeline
 // - Specific Offset Labeling for Banjir & Longsor (H-1 to H+5)
 // - Support Dual-Engine: GeoJSON Vector & Shaded PNG Overlay
-// - Support Real-Time Opacity Slider (GeoJSON & Image Overlay)
-// - FIXED: Tampilan Tanggal Presisi & Bersih (Tanpa Teks "Data Kosong")
+// - Support Real-Time Opacity Slider
+// - FIXED: Sinkronisasi Mutlak Tanggal (No Teks "Hari ke-X" saat kosong)
 // ==========================================
 
 let currentCategory = 'hazard'; 
@@ -84,12 +84,21 @@ function loadProductTimeline(category, productKey) {
         btnContainer.innerHTML = "";
     }
 
-    // Default ke 7 hari jika config tidak terdefinisi
     let totalDays = productConfig.days || 7;
-    window.validDates = Array.from({ length: totalDays }, (_, i) => `Hari ke-${i + 1}`); 
-
-    // Cek apakah produk aktif termasuk dalam 4 parameter khusus (Banjir & Longsor)
     let isOffsetProduct = ['banjir', 'longsor', 'risiko_banjir', 'risiko_longsor'].includes(productKey);
+
+    // KUNCI PERBAIKAN: Isi window.validDates langsung dengan TANGGAL ASLI
+    // bukan lagi teks "Hari ke-X", agar 100% sinkron dengan metadata.json
+    window.validDates = Array.from({ length: totalDays }, (_, i) => {
+        let dayShift = isOffsetProduct ? (i - 1) : i;
+        let targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + dayShift);
+        
+        if (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') {
+            return Utils.formatTanggal(targetDate.toISOString().split('T')[0]);
+        }
+        return targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }); 
 
     for (let i = 0; i < totalDays; i++) {
         if (btnContainer) {
@@ -143,18 +152,14 @@ function loadDay(index) {
     window.currentIndex = index;
     let productConfig = CONFIG.products[currentCategory][currentProductKey];
     let dateTextEl = document.getElementById('validDateText');
-    if (dateTextEl) dateTextEl.innerText = `Valid: Memuat Hari ke-${index + 1}...`;
+    
+    // Ambil tanggal dari array yang sudah di-generate dengan sempurna
+    let fallbackDateStr = (window.validDates && window.validDates[index]) ? window.validDates[index] : `Memuat Hari...`;
 
     // Bersihkan seluruh layer yang ada di peta
     clearAllActiveOverlays();
 
     if (typeof showLoader === 'function') showLoader();
-
-    // ==========================================
-    // PERHITUNGAN OFFSET TANGGAL (Untuk Fallback)
-    // ==========================================
-    let isOffsetProduct = ['banjir', 'longsor', 'risiko_banjir', 'risiko_longsor'].includes(currentProductKey);
-    let dayShift = isOffsetProduct ? (index - 1) : index;
 
     // ==========================================
     // CABANG 1: JIKA TIPE PRODUK = IMAGE_OVERLAY (PNG HARIAN)
@@ -181,18 +186,12 @@ function loadDay(index) {
                     interactive: false 
                 }).addTo(map);
 
-                // Menampilkan Tanggal dengan Rapi (Tanpa Teks Data Kosong)
                 if (metaData.valid_time && dateTextEl) {
                     dateTextEl.innerText = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') 
                         ? `Valid: ${Utils.formatTanggal(metaData.valid_time)}`
                         : `Valid: ${metaData.valid_time}`;
                 } else if (dateTextEl) {
-                    let targetDate = new Date();
-                    targetDate.setDate(targetDate.getDate() + dayShift);
-                    let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
-                        ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
-                        : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                    dateTextEl.innerText = `Valid: ${formattedDate}`;
+                    dateTextEl.innerText = `Valid: ${fallbackDateStr}`;
                 }
 
                 keepAdminBoundariesOnTop();
@@ -201,14 +200,7 @@ function loadDay(index) {
             })
             .catch(err => {
                 console.warn("Peringatan PNG Overlay:", err.message);
-                if (dateTextEl) {
-                    let targetDate = new Date();
-                    targetDate.setDate(targetDate.getDate() + dayShift);
-                    let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
-                        ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
-                        : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                    dateTextEl.innerText = `Valid: ${formattedDate}`;
-                }
+                if (dateTextEl) dateTextEl.innerText = `Valid: ${fallbackDateStr}`;
                 updateActiveDayButtonUI(productConfig, index);
                 if (typeof hideLoader === 'function') hideLoader();
             });
@@ -234,18 +226,11 @@ function loadDay(index) {
                 polyDate = firstProps.date || firstProps.tanggal || firstProps.validity || firstProps.valid_date;
             }
 
-            // Menampilkan Tanggal dengan Rapi (Tanpa Teks Data Kosong)
+            // TAMPILKAN TANGGAL DENGAN RAPI (Jika fitur kosong, pakai fallbackDateStr)
             if (polyDate && dateTextEl && typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function') {
                 dateTextEl.innerText = `Valid: ${Utils.formatTanggal(polyDate)}`;
-            } else if (window.validDates && window.validDates[index] && dateTextEl) {
-                dateTextEl.innerText = `Valid: ${window.validDates[index]}`;
             } else if (dateTextEl) {
-                let targetDate = new Date();
-                targetDate.setDate(targetDate.getDate() + dayShift);
-                let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
-                    ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
-                    : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                dateTextEl.innerText = `Valid: ${formattedDate}`;
+                dateTextEl.innerText = `Valid: ${fallbackDateStr}`;
             }
 
             let opacityInput = document.getElementById('opacityRange');
@@ -294,14 +279,10 @@ function loadDay(index) {
         })
         .catch(err => {
             console.warn("Peringatan pemuatan GeoJSON:", err.message);
-            // Tetap merender tanggal secara bersih jika file kosong/tidak ada (404)
+            
+            // JIKA DATA KOSONG/TIDAK DITEMUKAN, TETAP TAMPILKAN TANGGAL VALID
             if (dateTextEl) {
-                let targetDate = new Date();
-                targetDate.setDate(targetDate.getDate() + dayShift);
-                let formattedDate = (typeof Utils !== 'undefined' && typeof Utils.formatTanggal === 'function')
-                    ? Utils.formatTanggal(targetDate.toISOString().split('T')[0])
-                    : targetDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                dateTextEl.innerText = `Valid: ${formattedDate}`;
+                dateTextEl.innerText = `Valid: ${fallbackDateStr}`;
             }
 
             updateActiveDayButtonUI(productConfig, index);

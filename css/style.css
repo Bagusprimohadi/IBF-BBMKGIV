@@ -336,7 +336,7 @@ body, html {
     .logo-container { 
         display: flex !important;
         position: fixed !important;
-        top: 65px !important;
+        top: 90px !important;
         right: 12px !important;
         padding: 4px 8px;
         border-radius: 6px;
@@ -349,7 +349,7 @@ body, html {
     /* Posisi Tombol Tepat di Bawah Logo di Layar HP */
     .bottom-right-controls {
         position: fixed !important;
-        top: 125px !important;
+        top: 135px !important;
         bottom: auto !important;
         right: 12px !important;
         flex-direction: column !important;

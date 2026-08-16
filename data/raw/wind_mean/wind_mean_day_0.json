@@ -1,7 +1,7 @@
 {
   "param": "wind_mean",
-  "valid_time": "2026-08-15",
-  "min_value": 1.09,
+  "valid_time": "2026-08-16",
+  "min_value": 1.08,
   "max_value": 19.43,
   "bounds": {
     "south": -11.0,

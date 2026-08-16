@@ -314,51 +314,53 @@ body, html { 
 }
 
 /* ==========================================
-   RESPONSIF SMARTPHONE (HP)
-   ========================================== */
+   RESPONSIF SMARTPHONE (HP)
+   ========================================== */
 @media screen and (max-width: 768px) {
-    .map-header {
-        top: 10px !important; 
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        min-width: auto;
-        width: calc(100vw - 24px); 
-        max-width: 100vw;
-        padding: 8px 12px; 
-        border-radius: 8px;
-    }
+    .map-header {
+        top: 10px !important; 
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        min-width: auto;
+        width: calc(100vw - 24px); 
+        max-width: 100vw;
+        padding: 8px 12px; 
+        border-radius: 8px;
+    }
 
-    .map-header h3 { font-size: 9px; }
-    .map-header h1 { font-size: 12px; margin: 2px 0; }
-    .map-header p { font-size: 10px; }
+    .map-header h3 { font-size: 9px; }
+    .map-header h1 { font-size: 12px; margin: 2px 0; }
+    .map-header p { font-size: 10px; }
 
-    /* Logo Tampil Menyesuaikan Layar HP (45px) */
-    .logo-container { 
-        display: flex !important;
-        position: fixed !important;
-        top: 65px !important;
-        right: 12px !important;
-        padding: 4px 8px;
-        border-radius: 6px;
-    }
+    /* Logo Turun Bebas di Bawah Header */
+    .logo-container { 
+        display: flex !important;
+        position: fixed !important;
+        top: 90px !important; /* Ditingkatkan dari 65px agar lolos dari bawah header */
+        right: 12px !important;
+        padding: 4px 8px;
+        border-radius: 6px;
+        z-index: 1000 !important;
+    }
 
-    .logo-instansi {
-        height: 25px; /* Skala proporsional di HP */
-    }
+    .logo-instansi {
+        height: 25px; /* Skala proporsional di HP */
+    }
 
-    /* Posisi Tombol Tepat di Bawah Logo di Layar HP */
-    .bottom-right-controls {
-        position: fixed !important;
-        top: 125px !important;
-        bottom: auto !important;
-        right: 12px !important;
-        flex-direction: column !important;
-        gap: 6px;
-    }
+    /* Posisi Tombol Tepat di Bawah Logo */
+    .bottom-right-controls {
+        position: fixed !important;
+        top: 135px !important; /* Ditingkatkan dari 125px agar pas di bawah logo */
+        bottom: auto !important;
+        right: 12px !important;
+        flex-direction: column !important;
+        gap: 6px;
+        z-index: 1000 !important;
+    }
 
-    .action-btn-custom {
-        padding: 6px 10px;
-        font-size: 11px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
+    .action-btn-custom {
+        padding: 6px 10px;
+        font-size: 11px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
 }

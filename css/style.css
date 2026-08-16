@@ -312,7 +312,8 @@ body, html { 
     text-align: center;
     color: #64748b;
 }
-
+/* --- TUTUP RULE CSS SEBELUMNYA DENGAN KURUNG KURAWAL INI --- */
+}
 /* ==========================================
    RESPONSIF SMARTPHONE (HP)
    ========================================== */

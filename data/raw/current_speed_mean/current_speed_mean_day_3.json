@@ -1,8 +1,8 @@
 {
   "param": "current_speed_mean",
-  "valid_time": "2026-08-20",
+  "valid_time": "2026-08-22",
   "min_value": 0.03,
-  "max_value": 1.49,
+  "max_value": 1.6,
   "bounds": {
     "south": -11.0,
     "west": 95.0,

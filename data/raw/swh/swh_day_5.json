@@ -1,8 +1,8 @@
 {
   "param": "swh",
-  "valid_time": "2026-08-24",
-  "min_value": 0.29,
-  "max_value": 3.3,
+  "valid_time": "2026-08-25",
+  "min_value": 0.17,
+  "max_value": 3.09,
   "bounds": {
     "south": -11.0,
     "west": 95.0,

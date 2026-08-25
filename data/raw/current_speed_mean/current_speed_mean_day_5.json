@@ -1,6 +1,6 @@
 {
   "param": "current_speed_mean",
-  "valid_time": "2026-08-30",
+  "valid_time": "2026-08-31",
   "min_value": 0.02,
   "max_value": 1.47,
   "bounds": {

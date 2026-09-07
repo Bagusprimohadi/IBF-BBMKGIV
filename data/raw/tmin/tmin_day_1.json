@@ -1,8 +1,8 @@
 {
   "param": "tmin",
-  "valid_time": "2026-09-07",
-  "min_value": 3.86,
-  "max_value": 29.43,
+  "valid_time": "2026-09-08",
+  "min_value": 3.39,
+  "max_value": 29.21,
   "bounds": {
     "south": -11.0,
     "west": 95.0,

@@ -1,8 +1,8 @@
 {
   "param": "tp_sum",
-  "valid_time": "2026-09-14",
+  "valid_time": "2026-09-16",
   "min_value": 0.0,
-  "max_value": 37.13,
+  "max_value": 37.16,
   "bounds": {
     "south": -11.0,
     "west": 95.0,

@@ -1,8 +1,8 @@
 {
   "param": "tmax",
-  "valid_time": "2026-09-29",
-  "min_value": 12.7,
-  "max_value": 37.04,
+  "valid_time": "2026-09-30",
+  "min_value": 13.93,
+  "max_value": 36.55,
   "bounds": {
     "south": -11.0,
     "west": 95.0,
